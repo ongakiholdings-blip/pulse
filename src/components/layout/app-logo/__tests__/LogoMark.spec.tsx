@@ -13,6 +13,7 @@ describe('LogoMark', () => {
     it('renders the resolved app name', () => {
         render(<LogoMark />);
         expect(screen.getByText('DBOTPULSE')).toBeInTheDocument();
+        expect(screen.getByText('Your Deriv trading companion and trading guide')).toBeInTheDocument();
     });
 
     it('renders the logo image (first candidate) by default', () => {

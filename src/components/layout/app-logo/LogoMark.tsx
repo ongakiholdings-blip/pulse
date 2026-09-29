@@ -58,6 +58,7 @@ export const LogoMark = ({ height = 32 }: TLogoMarkProps) => {
                 <span className='app-header__logo-powered-by'>
                     powered by <strong>Deriv</strong>
                 </span>
+                <span className='app-header__tagline'>Your Deriv trading companion and trading guide</span>
             </span>
         </span>
     );

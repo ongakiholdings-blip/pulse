@@ -1185,3 +1185,215 @@
     border-top-color: #67e8f9;
     box-shadow: 0 0 0.5rem rgb(34 211 238 / 45%);
 }
+
+/* Green DBOTPULSE theme for the floating AI launcher and scanner panel. */
+.ai-scanner-trigger {
+    width: 5.25rem;
+    height: 5.25rem;
+    border-color: rgb(110 231 183 / 75%);
+    background:
+        linear-gradient(145deg, rgb(2 35 31 / 74%), rgb(1 17 17 / 92%)),
+        url('../../assets/green-abstract-gradient-background.jpg') center / cover;
+    box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 50%), 0 0 1.2rem rgb(52 211 153 / 38%);
+    animation:
+        ai-bounce 1.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite,
+        ai-green-pulse 2.6s ease-in-out infinite;
+
+    &::before {
+        background: linear-gradient(105deg, transparent 35%, rgb(209 250 229 / 20%) 50%, transparent 65%);
+    }
+
+    &::after {
+        background: linear-gradient(145deg, rgb(16 185 129 / 20%), transparent 60%);
+    }
+
+    span:not(.ai-scanner-trigger__wave) {
+        color: #d1fae5;
+        font-size: 1.5rem;
+        text-shadow: 0 0 0.7rem rgb(110 231 183 / 90%);
+    }
+
+    &:hover,
+    &--active {
+        border-color: #a7f3d0;
+        box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 55%), 0 0 2rem rgb(52 211 153 / 65%);
+    }
+
+    &__dot {
+        border-color: #022c22;
+    }
+
+    &__wave,
+    &__wave:nth-child(1),
+    &__wave:nth-child(2),
+    &__wave:nth-child(3) {
+        border-color: rgb(110 231 183 / 68%);
+        box-shadow: 0 0 1rem rgb(52 211 153 / 32%);
+    }
+}
+
+@keyframes ai-green-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 50%), 0 0 1.2rem rgb(52 211 153 / 38%);
+    }
+
+    50% {
+        box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 50%), 0 0 2rem rgb(52 211 153 / 68%);
+    }
+}
+
+.ai-scanner-modal {
+    border-color: rgb(110 231 183 / 48%);
+    background:
+        linear-gradient(145deg, rgb(2 22 20 / 90%), rgb(1 17 17 / 96%)),
+        url('../../assets/green-abstract-gradient-background.jpg') center / cover;
+    color: #e6fff5;
+    box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 62%), 0 0 2rem rgb(52 211 153 / 18%);
+
+    p,
+    span,
+    strong,
+    label,
+    div,
+    button {
+        color: #e6fff5 !important;
+    }
+
+    input,
+    select,
+    option {
+        border-color: rgb(110 231 183 / 40%);
+        background: rgb(2 28 26 / 94%);
+        color: #ecfdf5 !important;
+    }
+
+    .ai-scanner-modal__header {
+        background: linear-gradient(110deg, rgb(4 82 67 / 96%), rgb(2 35 31 / 98%));
+        border-bottom-color: rgb(110 231 183 / 28%);
+
+        h3 {
+            background: none;
+            color: #d1fae5 !important;
+            -webkit-text-fill-color: #d1fae5;
+            filter: drop-shadow(0 0 0.5rem rgb(52 211 153 / 32%));
+        }
+    }
+
+    .ai-scanner-modal__close {
+        border-color: rgb(110 231 183 / 42%);
+        background: rgb(2 28 26 / 85%);
+
+        &:hover {
+            border-color: #6ee7b7;
+            background: rgb(16 185 129 / 24%);
+        }
+    }
+
+    .ai-scanner-modal__mode-bar,
+    .ai-scanner-modal__description,
+    .ai-scanner-modal__tabs {
+        border-color: rgb(110 231 183 / 20%);
+        background: rgb(2 28 26 / 74%);
+    }
+
+    .ai-scanner-modal__mode-btn,
+    .ai-scanner-modal__tab {
+        border-color: rgb(110 231 183 / 32%);
+        background-color: rgb(4 50 42 / 56%);
+
+        &:hover:not(:disabled) {
+            border-color: #6ee7b7;
+            background-color: rgb(16 185 129 / 22%);
+        }
+
+        &--active,
+        &--evenodd#{&}--active {
+            border-color: #6ee7b7;
+            background: linear-gradient(135deg, #047857, #10b981);
+            color: #ecfdf5 !important;
+            box-shadow: 0 0 0.8rem rgb(52 211 153 / 24%);
+        }
+    }
+
+    .ai-scanner-modal__strategy-info h4 {
+        background: linear-gradient(135deg, #ecfdf5, #6ee7b7);
+        -webkit-text-fill-color: transparent;
+    }
+
+    .ai-scanner-modal__section-label {
+        border-bottom-color: rgb(110 231 183 / 28%);
+        color: #6ee7b7 !important;
+        text-shadow: 0 0 0.6rem rgb(52 211 153 / 28%);
+    }
+
+    .ai-scanner-modal__best-card,
+    .ai-scanner-modal__param input,
+    .ai-scanner-modal__ticks input,
+    .ai-scanner-modal__field span,
+    .ai-scanner-modal__status {
+        border-color: rgb(110 231 183 / 28%);
+        background: rgb(2 28 26 / 76%);
+    }
+
+    .ai-scanner-modal__param input:focus,
+    .ai-scanner-modal__ticks input:focus {
+        border-color: #6ee7b7;
+        box-shadow: 0 0 0 3px rgb(52 211 153 / 18%);
+    }
+
+    .ai-scanner-modal__field .ai-scanner-modal__field-value--ai,
+    .ai-scanner-modal__field-value--rate,
+    .ai-scanner-modal__field-value--prediction {
+        border-color: rgb(110 231 183 / 45%) !important;
+        background: rgb(16 185 129 / 16%) !important;
+        color: #a7f3d0 !important;
+        text-shadow: 0 0 0.6rem rgb(52 211 153 / 30%) !important;
+    }
+
+    .ai-scanner-modal__progress {
+        background: rgb(110 231 183 / 14%);
+    }
+
+    .ai-scanner-modal__progress-bar {
+        background: linear-gradient(90deg, #047857, #10b981, #6ee7b7);
+    }
+
+    .ai-scanner-modal__status--scanning,
+    .ai-scanner-modal__status--done {
+        border-color: rgb(110 231 183 / 34%);
+        background: rgb(4 50 42 / 78%);
+        color: #a7f3d0 !important;
+    }
+
+    .ai-scanner-modal__status--error {
+        border-color: rgb(248 113 113 / 48%);
+        background: rgb(127 29 29 / 32%);
+        color: #fca5a5 !important;
+    }
+
+    .ai-scanner-modal__btn {
+        border-color: rgb(110 231 183 / 42%);
+        background: rgb(4 50 42 / 82%);
+
+        &--scan,
+        &--success {
+            border-color: rgb(167 243 208 / 62%) !important;
+            background: linear-gradient(135deg, #047857, #10b981) !important;
+            color: #ecfdf5 !important;
+            box-shadow: 0 0.25rem 1rem rgb(52 211 153 / 24%);
+        }
+
+        &--primary,
+        &--secondary {
+            border-color: rgb(110 231 183 / 42%);
+            background: rgb(4 50 42 / 82%);
+        }
+    }
+}
+
+.ai-scanner-spinner {
+    border-color: rgb(110 231 183 / 22%);
+    border-top-color: #6ee7b7;
+    box-shadow: 0 0 0.5rem rgb(52 211 153 / 35%);
+}

@@ -50,7 +50,7 @@ const Footer = () => {
             <div className='app-footer__vertical-line' />
             <NetworkStatus />
             <div className='app-footer__copyright' title='All rights reserved. Unauthorized copying, modification, or resale is prohibited.'>
-                © 2026 <strong>Index_Navigator</strong>
+                © 2026 <strong>DBOTPULSE</strong>
             </div>
 
             {/* [AI] Only show language modal if language settings are enabled */}
