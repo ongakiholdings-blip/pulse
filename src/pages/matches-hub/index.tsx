@@ -361,8 +361,8 @@ const MatchesHub = () => {
             <div className='matches-hub__shell'>
                 <header className='matches-hub__header'>
                     <div>
-                        <p className='matches-hub__eyebrow'>NAVIGATOR SYSTEMS</p>
-                        <h1>♛ King of Matches</h1>
+                        <p className='matches-hub__eyebrow'>PULSE</p>
+                        <h1>♛ Pulse</h1>
                         <p className='matches-hub__connection'>
                             <span className={connectionStatus === CONNECTION_STATUS.OPENED ? 'is-connected' : ''} />
                             {connectionStatus === CONNECTION_STATUS.OPENED ? 'DERIV WEBSOCKET CONNECTED' : 'CONNECTING TO DERIV'}

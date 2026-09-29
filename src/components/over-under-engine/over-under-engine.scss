@@ -3113,3 +3113,93 @@ body.theme--light .oue {
         background-attachment: scroll !important;
     }
 }
+
+html body.theme--light .oue,
+html body.theme--dark .oue,
+body .oue {
+    background:
+        linear-gradient(180deg, rgb(2 22 20 / 82%), rgb(1 17 17 / 90%)),
+        url('../../assets/green-abstract-gradient-background.jpg') center / cover fixed no-repeat !important;
+    color: #e6fff5;
+}
+
+body .oue .oue__header,
+body .oue .oue__strategy-panel,
+body .oue .oue__strategy-picker,
+body .oue .oue__higher-lower-controls,
+body .oue .oue__panel {
+    border-color: rgb(110 231 183 / 38%);
+}
+
+body .oue .oue__strategy-panel,
+body .oue .oue__strategy-picker,
+body .oue .oue__higher-lower-controls {
+    background: linear-gradient(145deg, rgb(4 50 42 / 94%), rgb(2 24 23 / 96%));
+    color: #e6fff5;
+}
+
+body .oue .oue__strategy-card {
+    border-color: rgb(110 231 183 / 32%);
+    background: linear-gradient(145deg, rgb(4 50 42 / 90%), rgb(2 24 23 / 94%));
+}
+
+body .oue .oue__strategy-tab--active,
+body .oue .oue__entry-button--active,
+body .oue .oue__course-digit--current {
+    border-color: #6ee7b7;
+    background: linear-gradient(135deg, #047857, #10b981);
+    color: #ecfdf5;
+    box-shadow: 0 0 1rem rgb(52 211 153 / 25%);
+}
+
+body .oue .oue__strategy-tab:hover:not(:disabled),
+body .oue .oue__entry-button:hover:not(:disabled) {
+    border-color: rgb(110 231 183 / 65%);
+    background-color: rgb(16 185 129 / 18%);
+}
+
+body .oue .oue__field input,
+body .oue .oue__field select,
+body .oue .oue__input {
+    border-color: rgb(110 231 183 / 42%);
+}
+
+body .oue .oue__higher-lower-chart {
+    border-color: rgb(110 231 183 / 35%);
+}
+
+html body.theme--light .oue .oue__strategy-picker,
+html body.theme--dark .oue .oue__strategy-picker,
+html body.theme--light .oue .oue__panel,
+html body.theme--dark .oue .oue__panel {
+    border-color: rgb(110 231 183 / 38%) !important;
+    background: linear-gradient(145deg, rgb(4 50 42 / 94%), rgb(2 24 23 / 96%)) !important;
+    color: #e6fff5 !important;
+}
+
+html body.theme--light .oue .oue__strategy-card,
+html body.theme--dark .oue .oue__strategy-card {
+    border-color: rgb(110 231 183 / 36%) !important;
+    background: linear-gradient(145deg, rgb(4 50 42 / 94%), rgb(2 24 23 / 98%)) !important;
+    color: #e6fff5 !important;
+}
+
+html body.theme--light .oue .oue__strategy-card-title,
+html body.theme--dark .oue .oue__strategy-card-title,
+html body.theme--light .oue .oue__strategy-card-meta,
+html body.theme--dark .oue .oue__strategy-card-meta,
+html body.theme--light .oue .oue__strategy-card-description,
+html body.theme--dark .oue .oue__strategy-card-description,
+html body.theme--light .oue .oue__strategy-card-action,
+html body.theme--dark .oue .oue__strategy-card-action {
+    color: #e6fff5 !important;
+}
+
+html body.theme--light .oue .oue__strategy-tab--active,
+html body.theme--dark .oue .oue__strategy-tab--active,
+html body.theme--light .oue .oue__entry-button--active,
+html body.theme--dark .oue .oue__entry-button--active {
+    border-color: #6ee7b7 !important;
+    background: linear-gradient(135deg, #047857, #10b981) !important;
+    color: #ecfdf5 !important;
+}

@@ -1,7 +1,7 @@
 @use 'components/shared/styles/constants' as *;
 @use 'components/shared/styles/mixins' as *;
 
-/* ── Index Navigator tab theme ── */
+/* ── DBOTPULSE tab theme ── */
 @property --n-angle {
     syntax: '<angle>';
     initial-value: 0deg;
@@ -15,14 +15,14 @@
 @keyframes tab-normal-pulse {
     0%, 100% {
         box-shadow:
-            0 0 0 0 rgb(59 130 246 / 0%),
-            0 0 18px 2px rgb(6 182 212 / 12%),
+            0 0 0 0 rgb(16 185 129 / 0%),
+            0 0 18px 2px rgb(52 211 153 / 14%),
             0 4px 20px rgb(0 0 0 / 50%);
     }
     50% {
         box-shadow:
-            0 0 0 5px rgb(59 130 246 / 15%),
-            0 0 36px 8px rgb(6 182 212 / 28%),
+            0 0 0 5px rgb(16 185 129 / 14%),
+            0 0 36px 8px rgb(52 211 153 / 26%),
             0 10px 36px rgb(0 0 0 / 60%);
     }
 }
@@ -527,20 +527,20 @@ html {
             }
 
             &__active-line {
-                background: linear-gradient(90deg, #20d4d4, #d6b35a);
-                box-shadow: 0 0 8px rgb(32 212 212 / 70%);
+                background: linear-gradient(90deg, #34d399, #a7f3d0);
+                box-shadow: 0 0 8px rgb(52 211 153 / 70%);
                 transition: left 220ms ease-out, width 220ms ease-out;
             }
 
             &__item {
                 position: relative;
                 z-index: 1;
-                color: #0f172a !important;
+                color: #d1fae5 !important;
                 font-family: var(--brand-font-primary), Inter, sans-serif;
                 font-size: 1.4rem;
                 font-style: italic;
                 font-weight: 800;
-                text-shadow: 0 1px 1px rgb(255 255 255 / 45%);
+                text-shadow: 0 1px 1px rgb(0 0 0 / 45%);
 
                 .deriv-text,
                 span {
@@ -551,22 +551,24 @@ html {
             }
 
             &__active {
-                background: linear-gradient(135deg, #20d4d4 0%, #d6b35a 100%);
-                color: #0f172a !important;
-                text-shadow: 0 1px 2px rgb(255 255 255 / 35%);
+                background: linear-gradient(135deg, rgb(4 82 67 / 94%) 0%, rgb(4 120 87 / 92%) 100%);
+                color: #ecfdf5 !important;
+                text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
 
                 svg {
-                    fill: #0f172a;
-                    filter: drop-shadow(0 0 6px rgb(255 255 255 / 40%));
+                    fill: #a7f3d0;
+                    filter: drop-shadow(0 0 6px rgb(110 231 183 / 40%));
                 }
             }
 
             &__list {
                 position: relative;
-                background: linear-gradient(110deg, #20d4d4 0%, #d6b35a 100%);
-                border: 1.5px solid rgb(32 212 212 / 55%);
+                background:
+                    linear-gradient(110deg, rgb(2 22 20 / 82%), rgb(3 48 42 / 86%), rgb(1 17 17 / 88%)),
+                    url('../../assets/green-abstract-gradient-background.jpg') center / cover;
+                border: 1.5px solid rgb(67 226 180 / 55%);
                 border-radius: 1rem 1rem 0 0;
-                box-shadow: 0 4px 18px rgb(0 0 0 / 25%), 0 0 22px rgb(32 212 212 / 30%);
+                box-shadow: 0 4px 18px rgb(0 0 0 / 35%), 0 0 22px rgb(52 211 153 / 24%);
                 justify-content: flex-start;
                 flex-wrap: nowrap;
                 overflow-x: auto;
@@ -580,7 +582,7 @@ html {
                     position: absolute;
                     inset: 0;
                     border-radius: inherit;
-                    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 24%) 50%, transparent 65%);
+                    background: linear-gradient(105deg, transparent 35%, rgb(167 243 208 / 18%) 50%, transparent 65%);
                     background-size: 220% 100%;
                     animation: tab-blue-shimmer 2.8s ease-in-out infinite;
                     pointer-events: none;
@@ -675,19 +677,19 @@ html {
                 flex-shrink: 0;
                 min-width: max-content;
                 overflow: visible;
-                color: #7dd3fc;
+                color: #a7f3d0;
                 transition: background 0.25s ease, color 0.25s ease;
 
                 svg {
-                    fill: #7dd3fc;
+                    fill: #a7f3d0;
                 }
 
                 &:hover {
-                    background: rgb(59 130 246 / 15%);
-                    color: #e0f2fe;
+                    background: rgb(16 185 129 / 18%);
+                    color: #ecfdf5;
 
                     svg {
-                        fill: #e0f2fe;
+                        fill: #ecfdf5;
                     }
                 }
 
@@ -840,47 +842,6 @@ html {
         &__button#db-animation {
             &__run-button {
                 background-color: var(--button-primary-default);
-            }
-
-            /* Final main navigation surface override. */
-            body .main__tabs-wrapper .dc-tabs--main__tabs {
-                background:
-                    linear-gradient(90deg, rgb(2 14 31 / 96%), rgb(4 29 55 / 90%)),
-                    url('../../assets/free-bots-wallpaper.jpeg') center / cover no-repeat !important;
-                border-bottom: 1px solid rgb(56 189 248 / 45%) !important;
-                box-shadow: 0 0.3rem 1rem rgb(0 0 0 / 28%), inset 0 -1px rgb(103 232 249 / 15%) !important;
-            }
-
-            body .main__tabs-wrapper .dc-tabs--main__tabs .dc-tabs__list {
-                background: transparent !important;
-                gap: 0.25rem;
-                padding: 0.35rem 0.6rem;
-            }
-
-            body .main__tabs-wrapper .dc-tabs--main__tabs .dc-tabs__item {
-                border: 1px solid transparent;
-                border-radius: 0.65rem;
-                color: #bae6fd !important;
-                transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-            }
-
-            body .main__tabs-wrapper .dc-tabs--main__tabs .dc-tabs__item:hover {
-                background: rgb(14 116 144 / 28%) !important;
-                border-color: rgb(103 232 249 / 35%);
-                color: #ecfeff !important;
-            }
-
-            body .main__tabs-wrapper .dc-tabs--main__tabs .dc-tabs__item.dc-tabs__active {
-                background: linear-gradient(135deg, rgb(8 145 178 / 42%), rgb(37 99 235 / 32%)) !important;
-                border-color: rgb(103 232 249 / 72%);
-                box-shadow: 0 0 1rem rgb(34 211 238 / 20%), inset 0 1px rgb(255 255 255 / 18%);
-                color: #fff !important;
-            }
-
-            body .main__tabs-wrapper .dc-tabs--main__tabs .dc-tabs__active-line {
-                background: #67e8f9 !important;
-                box-shadow: 0 0 0.7rem rgb(103 232 249 / 80%);
-                height: 2px;
             }
 
             &__stop-button {
@@ -1415,4 +1376,45 @@ html {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* Main navigation tabs: dark glass over the green abstract brand background. */
+body .main__tabs-wrapper .dc-tabs--main__tabs {
+    background:
+        linear-gradient(90deg, rgb(2 22 20 / 76%), rgb(3 48 42 / 78%), rgb(1 17 17 / 84%)),
+        url('../../assets/green-abstract-gradient-background.jpg') center 48% / cover no-repeat !important;
+    border-bottom: 1px solid rgb(67 226 180 / 68%) !important;
+    box-shadow: 0 0.3rem 1rem rgb(0 0 0 / 38%), inset 0 -1px rgb(110 255 204 / 20%) !important;
+}
+
+body .main__tabs-wrapper .dc-tabs--main__tabs .dc-tabs__list {
+    background: transparent !important;
+    gap: 0.25rem;
+    padding: 0.35rem 0.6rem;
+}
+
+body .main__tabs-wrapper .dc-tabs--main__tabs .dc-tabs__item {
+    border: 1px solid transparent;
+    border-radius: 0.65rem;
+    color: #a7f5cf !important;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body .main__tabs-wrapper .dc-tabs--main__tabs .dc-tabs__item:hover {
+    background: rgb(16 185 129 / 28%) !important;
+    border-color: rgb(110 255 204 / 62%);
+    color: #e6fff5 !important;
+}
+
+body .main__tabs-wrapper .dc-tabs--main__tabs .dc-tabs__item.dc-tabs__active {
+    background: linear-gradient(135deg, rgb(4 82 67 / 88%), rgb(4 120 87 / 72%)) !important;
+    border-color: rgb(110 255 204 / 86%);
+    box-shadow: 0 0 1rem rgb(52 211 153 / 25%), inset 0 1px rgb(230 255 245 / 24%);
+    color: #fff !important;
+}
+
+body .main__tabs-wrapper .dc-tabs--main__tabs .dc-tabs__active-line {
+    background: #6ee7b7 !important;
+    box-shadow: 0 0 0.7rem rgb(110 231 183 / 85%);
+    height: 2px;
 }

@@ -77,49 +77,46 @@
         }
     }
 
-    /* Robotics market header theme. Keep the controls readable over the
-       photographic backdrop with a dark glass treatment and cyan accents. */
-    .app-header {
-        background:
-            linear-gradient(90deg, rgb(2 14 31 / 96%), rgb(4 29 55 / 91%)),
-            url('../../../assets/free-bots-wallpaper.jpeg') center / cover no-repeat !important;
-        border-bottom: 1px solid rgb(56 189 248 / 42%);
-        box-shadow: 0 0.35rem 1.2rem rgb(0 0 0 / 35%), inset 0 -1px rgb(103 232 249 / 18%);
-        color: #e0f2fe;
+    /* DBOTPULSE burgundy, gold, and red navigation theme. */
+    background:
+        linear-gradient(90deg, rgb(2 22 20 / 76%), rgb(3 48 42 / 78%), rgb(1 17 17 / 84%)),
+        url('../../../assets/green-abstract-gradient-background.jpg') center 48% / cover no-repeat !important;
+    border-bottom: 1px solid rgb(67 226 180 / 68%);
+    box-shadow: 0 0.35rem 1.2rem rgb(0 0 0 / 42%), inset 0 -1px rgb(110 255 204 / 20%);
+    color: #e6fff5;
 
-        .deriv-text,
-        button,
-        a {
-            color: #e0f2fe;
-        }
+    .deriv-text,
+    button,
+    a {
+        color: #e6fff5;
+    }
 
-        button:hover,
-        a:hover {
-            color: #67e8f9;
-        }
+    button:hover,
+    a:hover {
+        color: #91ffd3;
+    }
 
-        .auth-actions__balance,
-        .auth-actions__balance strong {
-            color: #bae6fd;
-        }
+    .auth-actions__balance,
+    .auth-actions__balance strong {
+        color: #a7f5cf;
+    }
 
-        .currency-control__button {
-            background: rgb(8 47 73 / 78%);
-            border-color: rgb(103 232 249 / 42%);
-            color: #e0f2fe;
-        }
+    .currency-control__button {
+        background: rgb(2 35 31 / 86%);
+        border-color: rgb(110 255 204 / 58%);
+        color: #e6fff5;
+    }
 
-        &__account-settings {
-            border-inline-end-color: rgb(103 232 249 / 24%);
-        }
+    &__account-settings {
+        border-inline-end-color: rgb(110 255 204 / 32%);
+    }
 
-        &__account-settings,
-        .notifications__wrapper,
-        &__menu {
-            svg > path,
-            svg > g > path {
-                fill: #bae6fd;
-            }
+    &__account-settings,
+    .notifications__wrapper,
+    &__menu {
+        svg > path,
+        svg > g > path {
+            fill: #a7f5cf;
         }
     }
 }
@@ -254,7 +251,7 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    background: linear-gradient(110deg, #20d4d4 0%, #d6b35a 100%);
+    background: linear-gradient(110deg, #064e3b 0%, #059669 55%, #34d399 100%);
     color: #0f172a;
 
     .deriv-text,
@@ -275,34 +272,33 @@
     }
 }
 
-/* Secondary navigation header: match the dark robotics treatment used by the
-   primary header while retaining its existing tab layout. */
+/* Secondary navigation header: align with the DBOTPULSE green image theme. */
 body .derivs-secondary-tabs {
     background:
-        linear-gradient(90deg, rgb(2 14 31 / 96%), rgb(4 29 55 / 91%)),
-        url('../../../assets/free-bots-wallpaper.jpeg') center / cover no-repeat !important;
-    border-bottom: 1px solid rgb(56 189 248 / 48%);
-    box-shadow: 0 0.3rem 1rem rgb(0 0 0 / 28%), inset 0 -1px rgb(103 232 249 / 16%);
-    color: #bae6fd;
+        linear-gradient(90deg, rgb(2 22 20 / 76%), rgb(3 48 42 / 78%), rgb(1 17 17 / 84%)),
+        url('../../../assets/green-abstract-gradient-background.jpg') center 48% / cover no-repeat !important;
+    border-bottom: 1px solid rgb(67 226 180 / 68%);
+    box-shadow: 0 0.3rem 1rem rgb(0 0 0 / 35%), inset 0 -1px rgb(110 255 204 / 20%);
+    color: #a7f5cf;
 
     .deriv-text,
     button,
     a {
-        color: #bae6fd !important;
+        color: #a7f5cf !important;
     }
 
     [aria-selected='true'],
     .active {
-        background: linear-gradient(135deg, rgb(8 145 178 / 42%), rgb(37 99 235 / 32%)) !important;
+        background: linear-gradient(135deg, rgb(4 82 67 / 88%), rgb(4 120 87 / 72%)) !important;
         border-radius: 0.6rem;
-        box-shadow: 0 0 0.9rem rgb(34 211 238 / 18%), inset 0 1px rgb(255 255 255 / 14%);
+        box-shadow: 0 0 0.9rem rgb(52 211 153 / 22%), inset 0 1px rgb(230 255 245 / 18%);
         color: #fff !important;
     }
 
     button:hover,
     a:hover {
-        background: rgb(14 116 144 / 28%);
-        color: #ecfeff !important;
+        background: rgb(16 185 129 / 28%);
+        color: #e6fff5 !important;
     }
 }
 
@@ -485,22 +481,22 @@ body .derivs-secondary-tabs {
         }
 
         &__transfer-btn {
-            background: linear-gradient(110deg, #20d4d4 0%, #d6b35a 100%) !important;
+            background: linear-gradient(110deg, #064e3b 0%, #059669 55%, #34d399 100%) !important;
             border: 1px solid rgb(15 23 42 / 25%) !important;
-            color: #0f172a !important;
+            color: #ecfdf5 !important;
             font-weight: 800 !important;
             box-shadow: 0 2px 10px rgb(15 23 42 / 20%);
             transition: transform 0.15s ease, box-shadow 0.15s ease;
 
             &:hover:not(:disabled) {
-                background: linear-gradient(110deg, #49e5e5 0%, #ecd18a 100%) !important;
+                background: linear-gradient(110deg, #047857 0%, #10b981 55%, #6ee7b7 100%) !important;
                 box-shadow: 0 4px 14px rgb(15 23 42 / 28%);
                 transform: translateY(-1px);
             }
 
             &:disabled {
-                background: linear-gradient(110deg, rgb(32 212 212 / 50%), rgb(214 179 90 / 50%)) !important;
-                color: rgb(15 23 42 / 55%) !important;
+                background: linear-gradient(110deg, rgb(6 78 59 / 58%), rgb(5 150 105 / 58%)) !important;
+                color: rgb(236 253 245 / 62%) !important;
             }
         }
 
@@ -544,14 +540,14 @@ body .derivs-secondary-tabs {
         padding: 0.5rem 1.2rem;
         margin-inline-end: 0.8rem;
         border-radius: 16px;
-        border: 1.5px solid rgb(6 182 212 / 50%);
+        border: 1.5px solid rgb(110 231 183 / 50%);
         background: linear-gradient(
             90deg,
-            rgb(6 182 212 / 10%) 0%,
-            rgb(6 182 212 / 18%) 50%,
-            rgb(6 182 212 / 10%) 100%
+            rgb(16 185 129 / 10%) 0%,
+            rgb(16 185 129 / 18%) 50%,
+            rgb(16 185 129 / 10%) 100%
         );
-        color: #06b6d4;
+        color: #a7f3d0;
         font-size: 1.2rem;
         font-weight: 700;
         cursor: pointer;
@@ -565,12 +561,12 @@ body .derivs-secondary-tabs {
         &:hover {
             background: linear-gradient(
                 90deg,
-                rgb(6 182 212 / 22%) 0%,
-                rgb(6 182 212 / 32%) 50%,
-                rgb(6 182 212 / 22%) 100%
+                rgb(16 185 129 / 22%) 0%,
+                rgb(16 185 129 / 32%) 50%,
+                rgb(16 185 129 / 22%) 100%
             );
-            border-color: rgb(6 182 212 / 80%);
-            box-shadow: 0 0 10px rgb(6 182 212 / 25%);
+            border-color: rgb(110 231 183 / 80%);
+            box-shadow: 0 0 10px rgb(52 211 153 / 25%);
             transform: translateY(-1px);
         }
     }
@@ -578,7 +574,7 @@ body .derivs-secondary-tabs {
     /* ---------- Log in button (tertiary) ---------- */
     &.dc-btn--tertiary,
     .dc-btn--tertiary {
-        border: 1.5px solid #20d4d4 !important;
+        border: 1.5px solid #6ee7b7 !important;
         background: rgb(255 255 255 / 30%) !important;
 
         .dc-btn__text,
@@ -588,26 +584,26 @@ body .derivs-secondary-tabs {
 
         &:hover:not([disabled]) {
             background: rgb(255 255 255 / 45%) !important;
-            border-color: #d6b35a !important;
-            box-shadow: 0 0 10px rgb(6 182 212 / 20%) !important;
+            border-color: #a7f3d0 !important;
+            box-shadow: 0 0 10px rgb(52 211 153 / 20%) !important;
         }
     }
 
     /* ---------- Sign up button (primary__light) ---------- */
     .dc-btn--primary__light {
-        background: linear-gradient(110deg, #20d4d4 0%, #d6b35a 100%) !important;
+        background: linear-gradient(110deg, #064e3b 0%, #059669 55%, #34d399 100%) !important;
         background-size: 200% auto !important;
         animation: auth-btn-cyan-shimmer 2.5s linear infinite !important;
         border: none !important;
 
         .dc-btn__text,
         .dc-btn__icon {
-            color: #0f172a !important;
-            text-shadow: 0 1px 2px rgb(6 182 212 / 40%);
+            color: #ecfdf5 !important;
+            text-shadow: 0 1px 2px rgb(0 0 0 / 38%);
         }
 
         &:hover:not([disabled]) {
-            box-shadow: 0 0 14px rgb(6 182 212 / 35%) !important;
+            box-shadow: 0 0 14px rgb(52 211 153 / 35%) !important;
             transform: translateY(-1px);
         }
     }
@@ -618,20 +614,25 @@ body .derivs-secondary-tabs {
     100% { background-position:  200% center; }
 }
 
-/* Final header surface override: the shared Header component applies its
-   own background after the base app-header rules. */
+/* Final header override: the shared Header component applies its own background
+   after the base app-header rules. */
 body .app-header {
     background:
-        linear-gradient(90deg, rgb(2 14 31 / 96%), rgb(4 29 55 / 91%)),
-        url('../../../assets/free-bots-wallpaper.jpeg') center / cover no-repeat !important;
-    border-bottom: 1px solid rgb(56 189 248 / 55%) !important;
-    box-shadow: 0 0.35rem 1.2rem rgb(0 0 0 / 35%), inset 0 -1px rgb(103 232 249 / 18%) !important;
+        linear-gradient(90deg, rgb(2 22 20 / 76%), rgb(3 48 42 / 78%), rgb(1 17 17 / 84%)),
+        url('../../../assets/green-abstract-gradient-background.jpg') center 48% / cover no-repeat !important;
+    border-bottom: 1px solid rgb(67 226 180 / 68%) !important;
+    box-shadow: 0 0.35rem 1.2rem rgb(0 0 0 / 42%), inset 0 -1px rgb(110 255 204 / 20%) !important;
 }
 
 body .app-header .deriv-text,
 body .app-header button,
 body .app-header a {
-    color: #e0f2fe !important;
+    color: #e6fff5 !important;
+}
+
+body .app-header button:hover,
+body .app-header a:hover {
+    color: #91ffd3 !important;
 }
 
 .deriv-accordion--underline {

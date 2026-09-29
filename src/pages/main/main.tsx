@@ -413,7 +413,7 @@ const AppWrapper = observer(() => {
                                             fill='var(--text-general)'
                                             className='icon-general-fill-g-path'
                                         />
-                                        <Localize i18n_default_text='Deriv-Homes' />
+                                        <Localize i18n_default_text='DERIV COM' />
                                     </>
                                 }
                                 id='id-deriv-homes'
@@ -423,7 +423,7 @@ const AppWrapper = observer(() => {
                                     <div className='deriv-homes__water water-orb water-orb--two' />
                                     <div className='deriv-homes__ripple' />
                                     <div className='deriv-homes__content'>
-                                        <span className='deriv-homes__eyebrow'>INDEXNAVIGATOR × DERIV</span>
+                                        <span className='deriv-homes__eyebrow'>DBOTPULSE × DERIV</span>
                                         <h1>Build your next move with Deriv</h1>
                                         <p className='deriv-homes__intro'>
                                             Become a Deriv member and earn through affiliate marketing.
@@ -472,7 +472,7 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='Dashboard' />
+                                        <Localize i18n_default_text='DASHBOARD' />
                                     </>
                                 }
                                 id='id-dbot-dashboard'
@@ -487,7 +487,7 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='Bot Builder' />
+                                        <Localize i18n_default_text='BOT BUILDER' />
                                     </>
                                 }
                                 id='id-bot-builder'
@@ -500,7 +500,7 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='Free Bots' />
+                                        <Localize i18n_default_text='FREE BOTS' />
                                     </>
                                 }
                                 id='id-free-bots'
@@ -530,7 +530,7 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='AI Bots' />
+                                        <Localize i18n_default_text='AI BOTS' />
                                     </>
                                 }
                                 id='id-over-under-engine'
@@ -545,7 +545,7 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='Analysis-HUB' />
+                                        <Localize i18n_default_text='MARKET ANALYZER' />
                                     </>
                                 }
                                 id='id-signal-zone'
@@ -553,7 +553,7 @@ const AppWrapper = observer(() => {
                                 <div className='external-tab-frame'>
                                     <iframe
                                         src='https://indexnavigator.vercel.app/'
-                                        title='Analysis-HUB'
+                                        title='MARKET ANALYZER'
                                         allow='clipboard-read; clipboard-write'
                                     />
                                 </div>
@@ -596,7 +596,7 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='Charts' />
+                                        <Localize i18n_default_text='CHART' />
                                     </>
                                 }
                                 id={
@@ -619,7 +619,7 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='Deriv-T.View' />
+                                        <Localize i18n_default_text='TRADINGVIEW' />
                                     </>
                                 }
                                 id='id-deriv-t-view'
@@ -627,7 +627,7 @@ const AppWrapper = observer(() => {
                                 <div className='external-tab-frame'>
                                     <iframe
                                         src='https://charts.deriv.com/deriv'
-                                        title='Deriv-T.View'
+                                        title='TRADINGVIEW'
                                         allow='clipboard-read; clipboard-write'
                                     />
                                 </div>
@@ -640,7 +640,7 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='Copy Trading' />
+                                        <Localize i18n_default_text='COPY TRADING' />
                                     </>
                                 }
                                 id='id-copy-trading'
@@ -655,7 +655,7 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='Calculator' />
+                                        <Localize i18n_default_text='CALCULATOR' />
                                     </>
                                 }
                                 id='id-analysis'
@@ -671,7 +671,7 @@ const AppWrapper = observer(() => {
                                             fill='var(--text-general)'
                                             className='icon-general-fill-g-path'
                                         />
-                                        <Localize i18n_default_text='Tutorials' />
+                                        <Localize i18n_default_text='TUTORIALS' />
                                     </>
                                 }
                                 id='id-tutorials'

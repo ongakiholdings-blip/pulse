@@ -8,7 +8,7 @@ export type TSidebarItem = {
 
 export const SIDEBAR_INTRO = (): TSidebarItem[] => [
     {
-        label: localize('Welcome to Index Navigator!'),
+        label: localize('Welcome to DBOTPULSE!'),
         content: [
             {
                 data: localize(
@@ -21,14 +21,14 @@ export const SIDEBAR_INTRO = (): TSidebarItem[] => [
     },
     {
         label: localize('Guide'),
-        content: [{ data: localize('Index Navigator - your automated trading partner') }],
+        content: [{ data: localize('DBOTPULSE - your automated trading partner') }],
         link: true,
     },
     {
         label: localize('FAQs'),
         content: [
             {
-                data: localize('What is Index Navigator?'),
+                data: localize('What is DBOTPULSE?'),
                 faq_id: 'faq-0',
             },
             {

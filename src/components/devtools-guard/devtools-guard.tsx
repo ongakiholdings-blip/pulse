@@ -126,7 +126,7 @@ const DevToolsGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                         Close Developer Tools completely, then reload this page. The protection will remain active until
                         the tools are closed.
                     </p>
-                    <div className='devtools-guard__socials' aria-label='IndexNavigator social links'>
+                    <div className='devtools-guard__socials' aria-label='DBOTPULSE social links'>
                         {SOCIAL_LINKS.map(link => (
                             <a key={link.label} href={link.href} target='_blank' rel='noreferrer'>
                                 <SocialIcon name={link.label} />

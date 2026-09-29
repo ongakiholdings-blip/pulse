@@ -168,7 +168,7 @@ const GuideContent = ({ guide_tab_content, video_tab_content, is_dialog_open }: 
                                                     lineHeight='s'
                                                     size={isDesktop ? 's' : 'xs'}
                                                 >
-                                                    Index Navigator YouTube Channel
+                                                    DBOTPULSE YouTube Channel
                                                 </Text>
                                             </div>
                                         </div>

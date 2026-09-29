@@ -1,11 +1,11 @@
 {
-    "brand_name": "INDEX NAVIGATOR",
-    "brand_domain": "indexnavigator.site",
+    "brand_name": "DBOTPULSE",
+    "brand_domain": "dbotpulse.site",
     "brand_hostname": {
-        "staging": "staging.frostydbot.site",
-        "production": "indexnavigator.site"
+        "staging": "staging.dbotpulse.site",
+        "production": "dbotpulse.site"
     },
-    "domain_name": "indexnavigator.site",
+    "domain_name": "dbotpulse.site",
     "colors": {
         "primary": "#f7c53b",
         "secondary": "#64748b",
@@ -79,17 +79,17 @@
         "css_variable_prefix": "--brand"
     },
     "platform": {
-        "name": "INDEX NAVIGATOR",
+        "name": "DBOTPULSE",
         "footer": {
             "enable_language_settings": false,
             "enable_theme_toggle": true
         },
         "hostname": {
             "production": {
-                "com": "indexnavigator.site"
+                "com": "dbotpulse.site"
             },
             "staging": {
-                "com": "staging.frostydbot.site"
+                "com": "staging.dbotpulse.site"
             }
         },
         "auth2_url": {

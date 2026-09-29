@@ -219,8 +219,8 @@
                     }
 
                     &--active {
-                        border-color: #20a7a7;
-                        box-shadow: 0 0 0 2px rgb(32 212 212 / 16%), 0 0.6rem 1.4rem rgb(15 23 42 / 12%);
+                        border-color: #059669;
+                        box-shadow: 0 0 0 2px rgb(52 211 153 / 18%), 0 0.6rem 1.4rem rgb(15 23 42 / 12%);
                     }
 
                     &--dark {
@@ -229,8 +229,8 @@
                         color: #f8fafc;
 
                         &.mobile-menu__content__items__appearance__card--active {
-                            border-color: #20d4d4;
-                            box-shadow: 0 0 0 2px rgb(32 212 212 / 22%), 0 0.6rem 1.4rem rgb(15 23 42 / 25%);
+                            border-color: #6ee7b7;
+                            box-shadow: 0 0 0 2px rgb(52 211 153 / 24%), 0 0.6rem 1.4rem rgb(15 23 42 / 25%);
                         }
                     }
                 }
@@ -241,13 +241,13 @@
                     height: 3.2rem;
                     place-items: center;
                     border-radius: 0.8rem;
-                    background: rgb(14 165 183 / 12%);
-                    color: #0f6976;
+                    background: rgb(16 185 129 / 12%);
+                    color: #047857;
                     font-size: 2rem;
                 }
 
                 &__card--dark &__icon {
-                    background: rgb(32 212 212 / 18%);
+                    background: rgb(52 211 153 / 18%);
                     color: #70f3ea;
                 }
 

@@ -9,7 +9,7 @@ type TPlatform = {
 const isDomainAllowed = (domain_name: string) => {
     // This regex will match any official deriv production and testing domain names.
     // Allowed deriv domains: localhost, binary.sx, binary.com, deriv.com, deriv.be, deriv.me and their subdomains.
-    return /^(((.*)\.)?(localhost:8444|pages\.dev|indexnavigator\.site|frostydbot\.site|binary\.(sx|com)|deriv\.(com|me|be|dev)))$/.test(domain_name);
+    return /^(((.*)\.)?(localhost:8444|pages\.dev|dbotpulse\.site|binary\.(sx|com)|deriv\.(com|me|be|dev)))$/.test(domain_name);
 };
 
 export const getBrandWebsiteName = () => {

@@ -1,4 +1,4 @@
-# FrostyDBot — Deriv Trading Bot
+# DBOTPULSE — Deriv Trading Bot
 
 A self-hosted visual trading-bot builder on the Deriv WebSocket API. Features drag-and-drop strategy building with Blockly, an interactive SmartCharts chart, automated strategy execution, and a dashboard with tutorials.
 

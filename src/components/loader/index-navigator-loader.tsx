@@ -23,7 +23,7 @@ const IndexNavigatorLoader = ({ isInitializing = true }: TIndexNavigatorLoaderPr
     <main className='index-navigator-loader' aria-busy={isInitializing} aria-live='polite'>
         <section className='index-navigator-loader__content'>
             <div className='index-navigator-loader__topline' aria-hidden='true'>
-            <span>INDEX NAVIGATOR</span>
+            <span>DBOTPULSE</span>
             <span className='index-navigator-loader__topline-status'><i /> INITIALIZING</span>
             </div>
             <div className='index-navigator-loader__orb' aria-hidden='true'>

@@ -12,6 +12,7 @@
         gap: 1rem;
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
     &__connection {
         display: flex;
         align-items: center;
@@ -68,6 +69,60 @@
             &:focus {
                 border-color: #67e8f9;
                 box-shadow: 0 0 0 3px rgb(34 211 238 / 14%);
+            }
+        }
+
+        .bulk-trader {
+            background:
+                linear-gradient(145deg, rgb(2 22 20 / 78%), rgb(1 17 17 / 88%)),
+                url('../../assets/green-abstract-gradient-background.jpg') center / cover fixed no-repeat;
+            color: #e6fff5;
+
+            &__field {
+                span { color: #a7f3d0; }
+
+                select,
+                input {
+                    border-color: rgb(110 231 183 / 40%);
+                    background: rgb(2 28 26 / 88%);
+                    color: #ecfdf5;
+
+                    &:focus {
+                        border-color: #6ee7b7;
+                        box-shadow: 0 0 0 3px rgb(52 211 153 / 18%);
+                    }
+                }
+            }
+
+            &__tick-heading strong { color: #6ee7b7; text-shadow: 0 0 1rem rgb(52 211 153 / 35%); }
+            &__auto,
+            &__auto-widget {
+                border-color: rgb(110 231 183 / 42%);
+                background: linear-gradient(145deg, rgb(4 50 42 / 96%), rgb(2 24 23 / 98%));
+                color: #d1fae5;
+            }
+
+            &__digit {
+                color: #e6fff5;
+                &:hover span,
+                &--selected span {
+                    background: rgb(16 185 129 / 26%);
+                    box-shadow: 0 0 0 2px #6ee7b7, 0 0 1rem rgb(52 211 153 / 25%);
+                }
+
+                &--live span {
+                    background: linear-gradient(145deg, #34d399, #047857);
+                    border-color: #d1fae5;
+                    box-shadow: 0 0 0 3px rgb(110 231 183 / 35%), 0 0 1.4rem rgb(52 211 153 / 58%);
+                    color: #022c22;
+                }
+
+                &--live::after { border-top-color: #6ee7b7; }
+            }
+
+            &__auto-widget-actions button:first-child {
+                border-color: rgb(110 231 183 / 55%);
+                background: linear-gradient(135deg, #047857, #10b981);
             }
         }
     }
@@ -292,4 +347,51 @@
         &__auto-widget { top: 4.5rem; right: 1rem; }
         &__auto-widget-grid { grid-template-columns: 1fr; }
     }
+}
+
+html body .bulk-trader {
+    background:
+        linear-gradient(145deg, rgb(2 22 20 / 82%), rgb(1 17 17 / 91%)),
+        url('../../assets/green-abstract-gradient-background.jpg') center / cover fixed no-repeat !important;
+    color: #e6fff5;
+}
+
+html body .bulk-trader__field span,
+html body .bulk-trader__hint,
+html body .bulk-trader__tick-heading span,
+html body .bulk-trader__trade-status {
+    color: #a7f3d0;
+}
+
+html body .bulk-trader__field select,
+html body .bulk-trader__field input,
+html body .bulk-trader__auto-widget,
+html body .bulk-trader__auto,
+html body .bulk-trader__digit span {
+    border-color: rgb(110 231 183 / 42%);
+    background-color: rgb(2 28 26 / 90%);
+    color: #ecfdf5;
+}
+
+html body .bulk-trader__field select:focus,
+html body .bulk-trader__field input:focus {
+    border-color: #6ee7b7;
+    box-shadow: 0 0 0 3px rgb(52 211 153 / 18%);
+}
+
+html body .bulk-trader__tick-heading strong { color: #6ee7b7; }
+
+html body .bulk-trader__digit:hover span,
+html body .bulk-trader__digit--selected span {
+    border-color: #6ee7b7;
+    background: rgb(16 185 129 / 26%);
+    box-shadow: 0 0 0 2px rgb(110 231 183 / 60%), 0 0 1rem rgb(52 211 153 / 25%);
+}
+
+html body .bulk-trader__digit--live span,
+html body .bulk-trader__auto-widget-actions button:first-child,
+html body .bulk-trader__action--over {
+    border-color: #a7f3d0;
+    background: linear-gradient(135deg, #047857, #10b981);
+    color: #ecfdf5;
 }

@@ -8,31 +8,31 @@
 @keyframes qs-form-blue-pulse {
     0%, 100% {
         box-shadow:
-            0 0 8px 2px rgb(6 182 212 / 50%),
-            0 0 24px 6px rgb(59 130 246 / 25%),
+            0 0 8px 2px rgb(52 211 153 / 42%),
+            0 0 24px 6px rgb(16 185 129 / 22%),
             inset 0 1px 0 rgb(224 242 254 / 30%);
     }
     50% {
         box-shadow:
-            0 0 16px 6px rgb(6 182 212 / 80%),
-            0 0 48px 16px rgb(59 130 246 / 35%),
+            0 0 16px 6px rgb(52 211 153 / 68%),
+            0 0 48px 16px rgb(16 185 129 / 30%),
             inset 0 1px 0 rgb(224 242 254 / 30%);
     }
 }
 
-/* Quick strategy Run button — blue/cyan normal-bot theme */
+/* Quick strategy Run button — green abstract brand theme */
 [data-testid='qs-run-button'] {
-    background: linear-gradient(110deg, #20d4d4 0%, #d6b35a 100%) !important;
+    background: linear-gradient(110deg, #064e3b 0%, #059669 55%, #34d399 100%) !important;
     background-size: 200% auto !important;
     animation: qs-form-blue-shimmer 2.5s linear infinite, qs-form-blue-pulse 2s ease-in-out infinite !important;
     border: none !important;
-    color: #0f172a !important;
+    color: #ecfdf5 !important;
     font-weight: 800 !important;
-    text-shadow: 0 1px 2px rgb(6 182 212 / 40%);
+    text-shadow: 0 1px 2px rgb(0 0 0 / 38%);
     position: relative;
     overflow: hidden;
 
-    svg path { fill: #0f172a !important; }
+    svg path { fill: #ecfdf5 !important; }
 
     &::after {
         content: '';
@@ -41,7 +41,7 @@
         background: linear-gradient(
             105deg,
             transparent 35%,
-            rgb(224 242 254 / 28%) 50%,
+            rgb(167 243 208 / 24%) 50%,
             transparent 65%
         );
         background-size: 200% 100%;
@@ -50,9 +50,9 @@
     }
 
     &:hover:not(:disabled) {
-        background: linear-gradient(110deg, #49e5e5 0%, #ecd18a 100%) !important;
+        background: linear-gradient(110deg, #047857 0%, #10b981 55%, #6ee7b7 100%) !important;
         background-size: 200% auto !important;
-        color: #0f172a !important;
+        color: #ecfdf5 !important;
         transform: scale(1.02);
         transition: transform 0.15s ease;
     }
@@ -67,7 +67,7 @@
         animation: none !important;
         box-shadow: none !important;
         opacity: 0.5;
-        color: rgb(56 189 248 / 50%) !important;
+        color: rgb(167 243 208 / 50%) !important;
     }
 }
 

@@ -221,6 +221,52 @@
         }
     }
 
+    .scanner-page {
+        background:
+            linear-gradient(145deg, rgb(2 22 20 / 84%), rgb(1 17 17 / 91%)),
+            url('../../assets/green-abstract-gradient-background.jpg') center / cover fixed;
+        color: #e6fff5;
+
+        &__shell,
+        &__panel,
+        &__market-list {
+            border-color: rgb(110 231 183 / 38%);
+            background-color: rgb(2 28 26 / 88%);
+            box-shadow: 0 0 2rem rgb(16 185 129 / 12%), inset 0 0 2rem rgb(0 0 0 / 22%);
+        }
+
+        input,
+        select {
+            border-color: rgb(110 231 183 / 52%);
+            background: #031713;
+            color: #ecfdf5;
+        }
+
+        &__market-row {
+            border-bottom-color: rgb(110 231 183 / 16%);
+            color: #e6fff5;
+
+            &:hover,
+            &--selected { background: rgb(16 185 129 / 20%); }
+            &--selected { box-shadow: inset 0.2rem 0 #6ee7b7; }
+        }
+
+        &__market-score { color: #a7f3d0; }
+        &__status { border-color: rgb(110 231 183 / 42%); background: rgb(4 50 42 / 72%); }
+
+        &__scan-button {
+            border: 1px solid rgb(167 243 208 / 60%);
+            background: linear-gradient(180deg, #34d399, #047857);
+            color: #022c22;
+            box-shadow: 0 0 1rem rgb(52 211 153 / 30%);
+        }
+
+        &__bot-actions button:last-child {
+            border-color: rgb(110 231 183 / 48%);
+            background: linear-gradient(180deg, #047857, #064e3b);
+        }
+    }
+
     &__meta { margin: 0.65rem 0 0; color: #6b9da8; font-size: 0.62rem; text-align: right; }
 
     @media (max-width: 650px) {
@@ -272,4 +318,43 @@
             .scanner-page__market-rate { text-align: right; }
         }
     }
+}
+
+html body .scanner-page {
+    background:
+        linear-gradient(145deg, rgb(2 22 20 / 84%), rgb(1 17 17 / 92%)),
+        url('../../assets/green-abstract-gradient-background.jpg') center / cover fixed no-repeat !important;
+    color: #e6fff5;
+}
+
+html body .scanner-page__shell,
+html body .scanner-page__panel,
+html body .scanner-page__market-list {
+    border-color: rgb(110 231 183 / 38%);
+    background: linear-gradient(145deg, rgb(4 50 42 / 94%), rgb(2 24 23 / 96%));
+    color: #e6fff5;
+}
+
+html body .scanner-page input,
+html body .scanner-page select {
+    border-color: rgb(110 231 183 / 52%);
+    background: rgb(2 28 26 / 94%);
+    color: #ecfdf5;
+}
+
+html body .scanner-page__market-row {
+    border-bottom-color: rgb(110 231 183 / 18%);
+    color: #e6fff5;
+}
+
+html body .scanner-page__market-row:hover,
+html body .scanner-page__market-row--selected {
+    background: rgb(16 185 129 / 20%);
+}
+
+html body .scanner-page__scan-button,
+html body .scanner-page__bot-actions button:last-child {
+    border-color: rgb(167 243 208 / 60%);
+    background: linear-gradient(135deg, #047857, #10b981);
+    color: #ecfdf5;
 }

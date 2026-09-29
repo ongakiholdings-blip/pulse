@@ -59,3 +59,74 @@
     &__contract-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; } &__contract-columns div { display: grid; align-content: start; gap: 0.4rem; min-height: 3rem; padding: 0.65rem; border: 1px solid #c8d8e8; border-radius: 0.3rem; font-size: 0.68rem; } &__contract-columns strong { font-size: 0.65rem; }
     @media (max-width: 600px) { height: calc(100vh - 6rem); max-height: calc(100vh - 6rem); &__header { align-items: flex-start; flex-direction: column; } &__digit-pills { align-self: flex-end; } &__toolbar { flex-wrap: wrap; } &__direction, &__contract-columns { flex-direction: column; grid-template-columns: 1fr; } &__chart { height: 16rem; } }
 }
+
+.matches-hub {
+    background:
+        linear-gradient(145deg, rgb(2 22 20 / 84%), rgb(1 17 17 / 91%)),
+        url('../../assets/green-abstract-gradient-background.jpg') center / cover fixed;
+    color: #e6fff5;
+
+    &__header,
+    &__trade-card,
+    &__contracts {
+        border-color: rgb(110 231 183 / 38%);
+    }
+
+    input,
+    select {
+        border-color: rgb(110 231 183 / 52%);
+        background: #031713;
+        color: #ecfdf5;
+    }
+
+    &__digit-pills strong {
+        background: linear-gradient(145deg, #047857, #064e3b);
+        box-shadow: 0 0 1rem rgb(52 211 153 / 28%);
+    }
+
+    &__chart {
+        border-color: rgb(110 231 183 / 35%);
+        background:
+            repeating-linear-gradient(to top, rgb(4 120 87 / 8%) 0, rgb(4 120 87 / 8%) 1px, transparent 1px, transparent 20%),
+            rgb(240 253 248 / 96%);
+    }
+
+    &__chart-divider { background: #047857; box-shadow: 0 0 0.2rem rgb(4 120 87 / 45%); }
+
+    &__trade-card,
+    &__contracts {
+        border-color: rgb(110 231 183 / 38%);
+        background: rgb(235 250 242 / 96%);
+    }
+}
+
+html body .matches-hub__header,
+html body .matches-hub__trade-card,
+html body .matches-hub__contracts {
+    background: linear-gradient(145deg, rgb(4 50 42 / 94%), rgb(2 24 23 / 96%));
+    color: #e6fff5;
+}
+
+html body .matches-hub__trade-card h2,
+html body .matches-hub__contracts h2,
+html body .matches-hub__trade-card label,
+html body .matches-hub__contracts label,
+html body .matches-hub__section-heading p,
+html body .matches-hub__contracts > p,
+html body .matches-hub__pick-label,
+html body .matches-hub__status {
+    color: #d1fae5;
+}
+
+html body .matches-hub__direction button,
+html body .matches-hub__segmented button.is-active,
+html body .matches-hub__trade-button {
+    background: linear-gradient(135deg, #047857, #10b981);
+    color: #ecfdf5;
+}
+
+html body .matches-hub__direction button.is-red,
+html body .matches-hub__segmented button.is-red {
+    background: linear-gradient(135deg, #991b1b, #dc2626);
+    color: #fff;
+}
