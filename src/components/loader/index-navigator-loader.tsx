@@ -1,80 +1,199 @@
+import { useEffect, useState, type CSSProperties } from 'react';
 import './index-navigator-loader.scss';
 
 type TIndexNavigatorLoaderProps = {
     isInitializing?: boolean;
+    isExiting?: boolean;
 };
 
-const ECOSYSTEM_APPS = [
-    { name: 'YouTube', glyph: '▶', className: 'youtube', href: 'https://www.youtube.com/@index_navigatorke' },
-    { name: 'TikTok', glyph: '♪', className: 'tiktok', href: 'https://www.tiktok.com/@indexnavigator' },
-    { name: 'WhatsApp', glyph: '◔', className: 'whatsapp', href: 'https://wa.me/+254115335502' },
-    { name: 'Telegram', glyph: '➤', className: 'telegram', href: 'https://t.me/index_navigator' },
-    {
-        name: 'Instagram',
-        glyph: '◎',
-        className: 'instagram',
-        href: 'https://www.instagram.com/index_navigator?igsi=eDE0Yzg3Z2swZHEz',
-    },
-    { name: 'Deriv', glyph: 'D', className: 'deriv', href: 'https://app.deriv.com' },
-    { name: 'MT5', glyph: '5', className: 'mt5', href: 'https://mt5.deriv.com' },
+type TMarket = {
+    symbol: string;
+    change: number;
+};
+
+const MARKET_START: TMarket[] = [
+    { symbol: 'EURUSD', change: 0.42 },
+    { symbol: 'GBPUSD', change: -0.27 },
+    { symbol: 'BTCUSD', change: 1.24 },
+    { symbol: 'ETHUSD', change: 1.08 },
+    { symbol: 'XAUUSD', change: 0.76 },
+    { symbol: 'NAS100', change: 0.63 },
 ];
 
-const IndexNavigatorLoader = ({ isInitializing = true }: TIndexNavigatorLoaderProps) => (
-    <main className='index-navigator-loader' aria-busy={isInitializing} aria-live='polite'>
-        <section className='index-navigator-loader__content'>
-            <div className='index-navigator-loader__topline' aria-hidden='true'>
-            <span>DBOTPULSE</span>
-            <span className='index-navigator-loader__topline-status'><i /> INITIALIZING</span>
+const CANDLES = [
+    { height: 38, wick: 15, delay: '0s', direction: 'up' },
+    { height: 56, wick: 20, delay: '-0.4s', direction: 'down' },
+    { height: 44, wick: 13, delay: '-0.8s', direction: 'up' },
+    { height: 68, wick: 22, delay: '-1.2s', direction: 'up' },
+    { height: 48, wick: 17, delay: '-1.6s', direction: 'down' },
+    { height: 60, wick: 20, delay: '-2s', direction: 'up' },
+    { height: 40, wick: 15, delay: '-2.4s', direction: 'down' },
+    { height: 54, wick: 19, delay: '-2.8s', direction: 'up' },
+];
+
+const PARTICLES = Array.from({ length: 18 }, (_, index) => ({
+    left: `${(index * 47 + 13) % 100}%`,
+    top: `${(index * 61 + 11) % 100}%`,
+    delay: `${-((index * 7) % 9)}s`,
+    duration: `${7 + (index % 6)}s`,
+}));
+
+const PROGRESS_DURATION_MS = 4000;
+
+const IndexNavigatorLoader = ({ isInitializing = true, isExiting = false }: TIndexNavigatorLoaderProps) => {
+    const [progress, setProgress] = useState(0);
+    const [markets, setMarkets] = useState(MARKET_START);
+
+    useEffect(() => {
+        const startedAt = performance.now();
+        const timer = window.setInterval(() => {
+            const elapsed = performance.now() - startedAt;
+            setProgress(Math.min(100, Math.round((elapsed / PROGRESS_DURATION_MS) * 100)));
+        }, 40);
+
+        return () => window.clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            setMarkets(current =>
+                current.map(market => {
+                    const movement = (Math.random() - 0.5) * 0.08;
+                    return { ...market, change: Math.round((market.change + movement) * 100) / 100 };
+                })
+            );
+        }, 1200);
+
+        return () => window.clearInterval(timer);
+    }, []);
+
+    const phase = progress < 20 ? 'boot' : progress < 45 ? 'logo' : progress < 70 ? 'orbit' : progress < 90 ? 'market' : 'ready';
+    const status = progress >= 100 ? 'ACCESS GRANTED' : 'INITIALIZING SECURE SESSION';
+
+    return (
+        <main
+            className={`index-navigator-loader${isExiting ? ' index-navigator-loader--exiting' : ''}`}
+            aria-busy={isInitializing}
+            aria-live='polite'
+            data-phase={phase}
+        >
+            <div className='index-navigator-loader__ambient' aria-hidden='true'>
+                {PARTICLES.map((particle, index) => (
+                    <i
+                        key={index}
+                        style={{
+                            left: particle.left,
+                            top: particle.top,
+                            animationDelay: particle.delay,
+                            animationDuration: particle.duration,
+                        }}
+                    />
+                ))}
             </div>
-            <div className='index-navigator-loader__orb' aria-hidden='true'>
-            <span className='index-navigator-loader__orb-layer index-navigator-loader__orb-layer--one' />
-            <span className='index-navigator-loader__orb-layer index-navigator-loader__orb-layer--two' />
-            <span className='index-navigator-loader__orb-layer index-navigator-loader__orb-layer--three' />
-            <span className='index-navigator-loader__orb-waterline' />
-            <span className='index-navigator-loader__orb-bubbles index-navigator-loader__orb-bubbles--one' />
-            <span className='index-navigator-loader__orb-bubbles index-navigator-loader__orb-bubbles--two' />
-            <span className='index-navigator-loader__orb-glow' />
-            <span className='index-navigator-loader__orb-pulse index-navigator-loader__orb-pulse--one' />
-            <span className='index-navigator-loader__orb-pulse index-navigator-loader__orb-pulse--two' />
+
+            <div className='index-navigator-loader__layout'>
+                <header className='index-navigator-loader__topbar'>
+                    <span className='index-navigator-loader__wordmark'>DBOTPULSE</span>
+                    <nav aria-label='Trading platform sections'>
+                        <span>TRADE</span><i /> <span>ANALYZE</span><i /> <span>GROW</span>
+                    </nav>
+                    <span className='index-navigator-loader__tagline'>REAL MARKETS. REAL OPPORTUNITIES.</span>
+                </header>
+
+                <section className='index-navigator-loader__core' aria-label='DBOTPULSE is loading'>
+                    <div className='index-navigator-loader__markets index-navigator-loader__markets--left'>
+                        {markets.slice(0, 3).map(market => (
+                            <MarketCard key={market.symbol} market={market} />
+                        ))}
+                    </div>
+
+                    <div className='index-navigator-loader__reactor'>
+                        <div className='index-navigator-loader__globe' aria-hidden='true' />
+                        <div className='index-navigator-loader__orbit index-navigator-loader__orbit--outer' aria-hidden='true' />
+                        <div className='index-navigator-loader__orbit index-navigator-loader__orbit--middle' aria-hidden='true' />
+                        <div className='index-navigator-loader__orbit index-navigator-loader__orbit--inner' aria-hidden='true' />
+                        <div className='index-navigator-loader__logo' aria-label='DP, powered by Deriv'>
+                            <span className='index-navigator-loader__logo-letters'><b>D</b><b>P</b></span>
+                            <span className='index-navigator-loader__logo-name'>DBOTPULSE</span>
+                            <span className='index-navigator-loader__logo-powered'>POWERED BY DERIV</span>
+                        </div>
+                        <div className='index-navigator-loader__chart index-navigator-loader__chart--left' aria-hidden='true'>
+                            {CANDLES.map((candle, index) => <Candle key={index} candle={candle} index={index} />)}
+                        </div>
+                        <div className='index-navigator-loader__chart index-navigator-loader__chart--right' aria-hidden='true'>
+                            {CANDLES.slice().reverse().map((candle, index) => <Candle key={index} candle={candle} index={index + 2} />)}
+                        </div>
+                        <div className='index-navigator-loader__platform' aria-hidden='true'>
+                            <span /><span /><i />
+                        </div>
+                    </div>
+
+                    <div className='index-navigator-loader__markets index-navigator-loader__markets--right'>
+                        {markets.slice(3).map(market => (
+                            <MarketCard key={market.symbol} market={market} />
+                        ))}
+                    </div>
+                </section>
+
+                <section className='index-navigator-loader__loading' aria-label='Loading progress'>
+                    <div className='index-navigator-loader__brand-copy'>
+                        <h1>DBOT<span>PULSE</span></h1>
+                        <p>SMART TRADING <i>/</i> AUTOMATED <i>/</i> RELIABLE</p>
+                    </div>
+                    <div
+                        className='index-navigator-loader__progress'
+                        role='progressbar'
+                        aria-label='Loading trading workspace'
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={progress}
+                    >
+                        <span className='index-navigator-loader__progress-fill' style={{ width: `${progress}%` }} />
+                    </div>
+                    <div className='index-navigator-loader__progress-meta'>
+                        <span>{status}</span>
+                        <strong>{progress}%</strong>
+                    </div>
+                </section>
+
+                <footer className='index-navigator-loader__features' aria-hidden='true'>
+                    <span><b>◉</b><strong>SMART BOTS</strong><small>Trade smarter</small></span>
+                    <span><b>▥</b><strong>REAL-TIME DATA</strong><small>Stay ahead</small></span>
+                    <span><b>⬡</b><strong>SECURE</strong><small>Your funds, our priority</small></span>
+                    <span><b>ϟ</b><strong>BUILT FOR YOU</strong><small>Trade without limits</small></span>
+                </footer>
             </div>
-            <div className='index-navigator-loader__ecosystem'>
-            {ECOSYSTEM_APPS.map(({ name, glyph, className, href }, index) => (
-                <a
-                    key={name}
-                    className={`index-navigator-loader__app index-navigator-loader__app--${className}`}
-                    href={href}
-                    target='_blank'
-                    rel='noreferrer'
-                    aria-label={`Open ${name}`}
-                    style={{ '--app-index': index } as React.CSSProperties}
-                >
-                    <b>{glyph}</b>
-                    <small>{name}</small>
-                </a>
-            ))}
-            </div>
-            <h1>Loading<span>.</span><span>.</span><span>.</span></h1>
-            <p>Preparing Deriv and MT5 trading tools</p>
-            <div className='index-navigator-loader__modules' aria-hidden='true'>
-            <div className='index-navigator-loader__module'>
-                <span className='index-navigator-loader__module-icon'>D</span>
-                <div><strong>DERIV</strong><small>Market workspace</small></div>
-                <i />
-            </div>
-            <div className='index-navigator-loader__route'><span /></div>
-            <div className='index-navigator-loader__module'>
-                <span className='index-navigator-loader__module-icon'>5</span>
-                <div><strong>MT5</strong><small>Terminal tools</small></div>
-                <i />
-            </div>
-            </div>
-            <div className='index-navigator-loader__footer' aria-hidden='true'>
-            <span>SECURE SESSION</span>
-            <span className='index-navigator-loader__footer-sparkline'><i /><i /><i /><i /><i /><i /><i /><i /></span>
-            <span>BUILDING YOUR DESK</span>
-            </div>
-        </section>
-    </main>
+        </main>
+    );
+};
+
+const MarketCard = ({ market }: { market: TMarket }) => (
+    <div className='index-navigator-loader__market'>
+        <span>{market.symbol}</span>
+        <strong className={market.change < 0 ? 'is-negative' : 'is-positive'}>
+            {market.change >= 0 ? '▲' : '▼'} {Math.abs(market.change).toFixed(2)}%
+        </strong>
+    </div>
+);
+
+const Candle = ({
+    candle,
+    index,
+}: {
+    candle: (typeof CANDLES)[number];
+    index: number;
+}) => (
+    <span
+        className={`index-navigator-loader__candle index-navigator-loader__candle--${candle.direction}`}
+        style={{
+            '--candle-height': `${candle.height}%`,
+            '--candle-wick': `${candle.wick}%`,
+            '--candle-index': index,
+            animationDelay: candle.delay,
+        } as CSSProperties}
+    >
+        <i />
+    </span>
 );
 
 export default IndexNavigatorLoader;

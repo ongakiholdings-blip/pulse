@@ -51,13 +51,30 @@
     &__section-heading p, &__contracts > p { margin: 0.3rem 0 0.65rem; color: #334b69; font-size: 0.78rem; }
     &__segmented { display: flex; margin: 0.4rem 0; border: 1px solid #aec9e0; border-radius: 0.35rem; overflow: hidden; }
     &__segmented button { border-radius: 0; background: transparent; color: #173761; } &__segmented button.is-active { background: #16804b; color: white; }
+    &__selection-mode { margin-top: 0.55rem; }
+    &__selection-mode > span { display: block; margin-bottom: 0.2rem; color: #75e8c4; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+    &__selection-mode .matches-hub__segmented { max-width: 34rem; margin-top: 0; }
+    &__ai-panel { margin: 0.55rem 0; padding: 0.65rem; border: 1px solid rgb(16 185 129 / 35%); border-radius: 0.4rem; background: rgb(2 24 23 / 62%); }
+    &__ai-controls { display: flex; align-items: end; justify-content: space-between; gap: 0.75rem; }
+    &__ai-controls label { width: min(12rem, 45%); }
+    &__ai-controls p { margin: 0 0 0.3rem; color: #b8e6d5; font-size: 0.72rem; text-align: end; }
+    &__ranked-candidates { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.45rem; margin: 0.65rem 0 0; padding: 0; list-style: none; }
+    &__ranked-candidates li { display: grid; justify-items: center; gap: 0.15rem; min-width: 0; padding: 0.45rem 0.2rem; border: 1px solid rgb(148 163 184 / 35%); border-radius: 0.35rem; background: rgb(15 23 42 / 56%); color: #cbd5e1; text-align: center; }
+    &__ranked-candidates li.is-selected { border-color: #34d399; background: linear-gradient(145deg, rgb(4 120 87 / 55%), rgb(6 78 59 / 72%)); color: #ecfdf5; box-shadow: 0 0 0.7rem rgb(52 211 153 / 14%); }
+    &__candidate-rank { color: #86efac; font-size: 0.62rem; font-weight: 800; }
+    &__ranked-candidates strong { color: #fff; font-size: 1.25rem; }
+    &__ranked-candidates li > span:nth-last-of-type(1), &__ranked-candidates small { font-size: 0.58rem; line-height: 1.25; }
+    &__ranked-candidates small { color: #b8e6d5; }
+    &__ai-context { margin: 0.55rem 0 0; color: #b8e6d5; font-size: 0.68rem; line-height: 1.45; }
+    &__ai-context--notice { color: #fcd34d; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #6ee7b7; outline-offset: 2px; }
     &__inputs { align-items: stretch; } &__inputs label:first-child { flex: 1; } &__inputs label:last-child { width: 4rem; }
     &__pick-label { margin: 0.65rem 0 0.35rem; color: #334b69; font-size: 0.78rem; font-weight: 700; text-align: center; }
     &__digits { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.4rem; } &__digits button { width: 2.25rem; height: 2rem; border: 1px solid #bfd1e5; border-radius: 0.3rem; background: white; color: #194277; font-size: 0.95rem; font-weight: 800; } &__digits button.is-selected { background: #21aa65; color: white; }
     &__trade-button { width: 100%; margin-top: 0.7rem; min-height: 2.7rem; border: 0; border-radius: 0.4rem; background: linear-gradient(90deg, #365777, #24633e); color: white; font-size: 0.9rem; font-weight: 800; text-align: left; padding: 0 0.7rem; } &__trade-button:disabled { opacity: 0.85; }
     &__status { margin: 0.45rem 0 0; color: #334b69; font-size: 0.78rem; font-weight: 700; }
     &__contract-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; } &__contract-columns div { display: grid; align-content: start; gap: 0.4rem; min-height: 3rem; padding: 0.65rem; border: 1px solid #c8d8e8; border-radius: 0.3rem; font-size: 0.68rem; } &__contract-columns strong { font-size: 0.65rem; }
-    @media (max-width: 600px) { height: calc(100vh - 6rem); max-height: calc(100vh - 6rem); &__header { align-items: flex-start; flex-direction: column; } &__digit-pills { align-self: flex-end; } &__toolbar { flex-wrap: wrap; } &__direction, &__contract-columns { flex-direction: column; grid-template-columns: 1fr; } &__chart { height: 16rem; } }
+    @media (max-width: 600px) { height: calc(100vh - 6rem); max-height: calc(100vh - 6rem); &__header { align-items: flex-start; flex-direction: column; } &__digit-pills { align-self: flex-end; } &__toolbar { flex-wrap: wrap; } &__direction, &__contract-columns { flex-direction: column; grid-template-columns: 1fr; } &__chart { height: 16rem; } &__ai-controls { align-items: stretch; flex-direction: column; } &__ai-controls label { width: 100%; } &__ai-controls p { margin: 0; text-align: start; } &__ranked-candidates { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 }
 
 .matches-hub {
@@ -97,6 +114,13 @@
     &__contracts {
         border-color: rgb(110 231 183 / 38%);
         background: rgb(235 250 242 / 96%);
+    }
+
+    &__selection-mode > span { color: #a7f3d0; }
+
+    &__ai-panel {
+        border-color: rgb(110 231 183 / 35%);
+        background: rgb(2 24 23 / 74%);
     }
 }
 

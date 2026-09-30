@@ -4,6 +4,7 @@ import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observab
 import { useApiBase } from '@/hooks/useApiBase';
 import { useStore } from '@/hooks/useStore';
 import { contract_stages } from '@/constants/contract-stage';
+import { rankObservedDigits } from './digit-ranking';
 import './matches-hub.scss';
 
 const DIGITS = Array.from({ length: 10 }, (_, digit) => digit);
@@ -71,6 +72,8 @@ const MatchesHub = () => {
     const [durationTicks, setDurationTicks] = useState('1');
     const [contractType, setContractType] = useState<'Matches' | 'Differs'>('Matches');
     const [batch, setBatch] = useState<'One digit' | 'Up to 5 digits (batch)'>('One digit');
+    const [aiEnabled, setAiEnabled] = useState(true);
+    const [candidateCount, setCandidateCount] = useState(1);
     const [stake, setStake] = useState('1');
     const [selectedDigits, setSelectedDigits] = useState<number[]>([]);
     const [currentTick, setCurrentTick] = useState('--');
@@ -231,8 +234,12 @@ const MatchesHub = () => {
     const totalTicks = digitHistory.length;
     const maxCount = Math.max(1, ...counts);
     const minCount = Math.min(...counts);
+    const digitRanking = useMemo(
+        () => rankObservedDigits(digitHistory, candidateCount),
+        [candidateCount, digitHistory]
+    );
     const rankedDigits = useMemo(
-        () => [...DIGITS].sort((a, b) => counts[b] - counts[a]),
+        () => [...DIGITS].sort((a, b) => counts[b] - counts[a] || a - b),
         [counts]
     );
     const chartDigits = useMemo(
@@ -245,9 +252,12 @@ const MatchesHub = () => {
     );
     const recommendedDigit = rankedDigits[0];
     const liveDigit = currentTick === '--' ? null : getLastDigit(currentTick, api_base.pip_sizes?.[symbol]);
-    const tradeDigits = batch === 'One digit' ? selectedDigits.slice(0, 1) : selectedDigits;
+    const aiDigits = digitRanking.recommendations.map(item => item.digit);
+    const tradeDigits = aiEnabled
+        ? aiDigits
+        : batch === 'One digit' ? selectedDigits.slice(0, 1) : selectedDigits;
     const activeLabel = tradeDigits.length === 0
-        ? 'Select a digit to trade'
+        ? aiEnabled && !digitRanking.hasEnoughData ? 'Waiting for sufficient tick history' : 'Select a digit to trade'
         : `${contractType} ${tradeDigits.join(', ')}`;
 
     const selectDigit = (digit: number) => {
@@ -417,40 +427,102 @@ const MatchesHub = () => {
                 <section className='matches-hub__trade-card'>
                     <div className='matches-hub__section-heading'>
                         <h2>Digit trade dock</h2>
-                        <p>Live {market} ticks power the digit chart and trading controls.</p>
+                        <p>Review observed {market} tick history, then confirm any trade manually.</p>
                     </div>
                     <div className='matches-hub__segmented'>
                         <button className={contractType === 'Matches' ? 'is-active' : ''} onClick={() => setContractType('Matches')} type='button'>Matches</button>
                         <button className={contractType === 'Differs' ? 'is-active is-red' : ''} onClick={() => setContractType('Differs')} type='button'>Differs</button>
                     </div>
-                    <div className='matches-hub__segmented'>
-                        <button className={batch === 'One digit' ? 'is-active' : ''} onClick={() => {
-                            setBatch('One digit');
-                            setSelectedDigits(current => current.slice(0, 1));
-                        }} type='button'>One digit</button>
-                        <button className={batch === 'Up to 5 digits (batch)' ? 'is-active' : ''} onClick={() => setBatch('Up to 5 digits (batch)')} type='button'>Select up to 5 digits</button>
+                    <div className='matches-hub__selection-mode'>
+                        <span id='matches-hub-selection-mode'>Digit selection</span>
+                        <div className='matches-hub__segmented' role='group' aria-labelledby='matches-hub-selection-mode'>
+                            <button aria-pressed={aiEnabled} className={aiEnabled ? 'is-active' : ''} onClick={() => setAiEnabled(true)} type='button'>AI digit ranking</button>
+                            <button
+                                aria-pressed={!aiEnabled}
+                                className={!aiEnabled ? 'is-active' : ''}
+                                onClick={() => {
+                                    if (aiEnabled && !selectedDigits.length) setSelectedDigits(aiDigits);
+                                    setAiEnabled(false);
+                                }}
+                                type='button'
+                            >
+                                Manual selection
+                            </button>
+                        </div>
                     </div>
+                    {aiEnabled ? (
+                        <div className='matches-hub__ai-panel'>
+                            <div className='matches-hub__ai-controls'>
+                                <label htmlFor='matches-hub-candidate-count'>Rank top
+                                    <select
+                                        id='matches-hub-candidate-count'
+                                        value={candidateCount}
+                                        onChange={event => setCandidateCount(Number(event.target.value))}
+                                    >
+                                        {[1, 2, 3, 4, 5].map(count => <option key={count} value={count}>{count} {count === 1 ? 'digit' : 'digits'}</option>)}
+                                    </select>
+                                </label>
+                                <p>{digitRanking.sampleSize} observed ticks · recency-weighted frequency</p>
+                            </div>
+                            <ol className='matches-hub__ranked-candidates' aria-label={`Top ${candidateCount} observed digit candidates`}>
+                                {digitRanking.rankedDigits.slice(0, 5).map(item => {
+                                    const isSelected = digitRanking.hasEnoughData && item.rank <= candidateCount;
+                                    return (
+                                        <li
+                                            aria-label={`Rank ${item.rank}, digit ${item.digit}, ${item.weightedPercent.toFixed(1)}% recency-weighted${isSelected ? ', selected for trade' : ''}`}
+                                            className={isSelected ? 'is-selected' : ''}
+                                            key={item.digit}
+                                        >
+                                            <span className='matches-hub__candidate-rank'>#{item.rank}</span>
+                                            <strong>{item.digit}</strong>
+                                            <span>{item.weightedPercent.toFixed(1)}% weighted</span>
+                                            <small>{item.observedCount} observed</small>
+                                        </li>
+                                    );
+                                })}
+                            </ol>
+                            {digitRanking.hasEnoughData ? (
+                                <p className='matches-hub__ai-context'>
+                                    Selected {candidateCount} distinct digit{candidateCount === 1 ? '' : 's'} by rank. Scores summarize this sample; they do not predict future ticks.
+                                </p>
+                            ) : (
+                                <p className='matches-hub__ai-context matches-hub__ai-context--notice' role='status'>
+                                    Need at least 10 valid ticks before selecting ranked digits ({digitRanking.sampleSize}/10 observed).
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        <>
+                            <div className='matches-hub__segmented'>
+                                <button aria-pressed={batch === 'One digit'} className={batch === 'One digit' ? 'is-active' : ''} onClick={() => {
+                                    setBatch('One digit');
+                                    setSelectedDigits(current => current.slice(0, 1));
+                                }} type='button'>One digit</button>
+                                <button aria-pressed={batch === 'Up to 5 digits (batch)'} className={batch === 'Up to 5 digits (batch)' ? 'is-active' : ''} onClick={() => setBatch('Up to 5 digits (batch)')} type='button'>Select up to 5 digits</button>
+                            </div>
+                            <p className='matches-hub__pick-label'>
+                                {batch === 'One digit'
+                                    ? 'Choose one digit · live frequencies update with each tick'
+                                    : `Choose up to 5 digits (${selectedDigits.length}/5 selected) · each digit opens one contract`}
+                            </p>
+                            <div className='matches-hub__digits'>
+                                {DIGITS.map(digit => (
+                                    <button
+                                        className={selectedDigits.includes(digit) ? 'is-selected' : ''}
+                                        key={digit}
+                                        onClick={() => selectDigit(digit)}
+                                        type='button'
+                                        aria-pressed={selectedDigits.includes(digit)}
+                                    >
+                                        {digit}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
                     <div className='matches-hub__inputs'>
                         <label>Stake (USD)<input min='0.35' step='0.01' type='number' value={stake} onChange={event => setStake(event.target.value)} /></label>
                         <label>Duration (ticks)<input min='1' max='5000' type='number' value={durationTicks} onChange={event => setDurationTicks(event.target.value)} /></label>
-                    </div>
-                    <p className='matches-hub__pick-label'>
-                        {batch === 'One digit'
-                            ? 'Choose one digit · live frequencies update with each tick'
-                            : `Choose up to 5 digits (${selectedDigits.length}/5 selected) · each digit opens one contract`}
-                    </p>
-                    <div className='matches-hub__digits'>
-                        {DIGITS.map(digit => (
-                            <button
-                                className={selectedDigits.includes(digit) ? 'is-selected' : ''}
-                                key={digit}
-                                onClick={() => selectDigit(digit)}
-                                type='button'
-                                aria-pressed={selectedDigits.includes(digit)}
-                            >
-                                {digit}
-                            </button>
-                        ))}
                     </div>
                     <button
                         className='matches-hub__trade-button'

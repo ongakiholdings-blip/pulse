@@ -188,7 +188,7 @@ const Scanner = () => {
     return (
         <section className='scanner-page' aria-label='Digit Scanner'>
             <div className='scanner-page__shell'>
-                <p className='scanner-page__eyebrow'>NAVIGATOR AI SCANNER</p>
+                <p className='scanner-page__eyebrow'>PULSE AI SCANNER</p>
                 <h1>Analysis Dashboard - Digit Scanner</h1>
                 <p className={`scanner-page__connection${connectionStatus === CONNECTION_STATUS.OPENED ? ' is-connected' : ''}`}>
                     <span />

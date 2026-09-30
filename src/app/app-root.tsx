@@ -8,6 +8,8 @@ import IndexNavigatorLoader from '@/components/loader/index-navigator-loader';
 import './app-root.scss';
 
 const AppContent = lazy(() => import('./app-content'));
+const MIN_LOADER_DURATION_MS = 4400;
+const LOADER_EXIT_DURATION_MS = 450;
 
 const ErrorComponentWrapper = observer(() => {
     const { common } = useStore();
@@ -33,13 +35,23 @@ const AppRoot = () => {
     const api_base_initialized = useRef(false);
     const [is_api_initialized, setIsApiInitialized] = useState(false);
     const [is_loader_visible, setIsLoaderVisible] = useState(true);
+    const [is_loader_exiting, setIsLoaderExiting] = useState(false);
 
     useEffect(() => {
+        const loaderStartedAt = Date.now();
         let loaderTimer: ReturnType<typeof setTimeout> | undefined;
+        let exitTimer: ReturnType<typeof setTimeout> | undefined;
+        const scheduleLoaderDismissal = () => {
+            const remainingDuration = Math.max(0, MIN_LOADER_DURATION_MS - (Date.now() - loaderStartedAt));
+            loaderTimer ??= setTimeout(() => {
+                setIsLoaderExiting(true);
+                exitTimer = setTimeout(() => setIsLoaderVisible(false), LOADER_EXIT_DURATION_MS);
+            }, remainingDuration);
+        };
         const timeoutId = setTimeout(() => {
             if (!is_api_initialized) {
                 setIsApiInitialized(true);
-                loaderTimer ??= setTimeout(() => setIsLoaderVisible(false), 650);
+                scheduleLoaderDismissal();
             }
         }, 5000);
 
@@ -53,7 +65,7 @@ const AppRoot = () => {
                     api_base_initialized.current = false;
                 } finally {
                     setIsApiInitialized(true);
-                    loaderTimer ??= setTimeout(() => setIsLoaderVisible(false), 650);
+                    scheduleLoaderDismissal();
                     clearTimeout(timeoutId);
                 }
             }
@@ -62,11 +74,14 @@ const AppRoot = () => {
         initializeApi();
         return () => {
             if (loaderTimer) clearTimeout(loaderTimer);
+            if (exitTimer) clearTimeout(exitTimer);
             clearTimeout(timeoutId);
         };
     }, []);
 
-    if (!store || !is_api_initialized || is_loader_visible) return <IndexNavigatorLoader />;
+    if (!store || !is_api_initialized || is_loader_visible) {
+        return <IndexNavigatorLoader isInitializing={!is_api_initialized} isExiting={is_loader_exiting} />;
+    }
 
     return (
         <Suspense fallback={<IndexNavigatorLoader />}>

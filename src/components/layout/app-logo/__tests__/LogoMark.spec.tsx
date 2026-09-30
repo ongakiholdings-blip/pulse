@@ -18,12 +18,12 @@ describe('LogoMark', () => {
 
     it('renders the logo image (first candidate) by default', () => {
         render(<LogoMark />);
-        expect(screen.getByRole('img')).toHaveAttribute('src', '/logo.png');
+        expect(screen.getByRole('img')).toHaveAttribute('src', '/logo.jpeg');
     });
 
     it('falls back to the letter badge after every logo candidate fails', () => {
         render(<LogoMark />);
-        // Candidates: /logo.png, /logo.jpg, /logo.jpeg, /logo.webp — error through all.
+        // Candidates: /logo.jpeg, /logo.png, /logo.jpg, /logo.webp — error through all.
         for (let i = 0; i < 4; i++) {
             const img = screen.queryByRole('img');
             if (!img) break;
