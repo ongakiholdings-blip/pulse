@@ -5,6 +5,14 @@ import { localize } from '@deriv-com/translations';
 import { observer as globalObserver } from '../../../utils/observer';
 import { error as logError } from './broadcast';
 
+// Higher (CALL) uses a positive relative barrier and Lower (PUT) a negative one.
+export const getSideBarrier = (contract_type, barrier) => {
+    if (typeof barrier !== 'string' || !/^[+-]\d+(\.\d+)?$/.test(barrier)) return barrier;
+    if (contract_type === 'CALL') return `+${barrier.slice(1)}`;
+    if (contract_type === 'PUT') return `-${barrier.slice(1)}`;
+    return barrier;
+};
+
 export const tradeOptionToProposal = (trade_option, purchase_reference) =>
     trade_option.contractTypes.map(type => {
         const proposal = {
@@ -28,7 +36,7 @@ export const tradeOptionToProposal = (trade_option, purchase_reference) =>
         if (!['TICKLOW', 'TICKHIGH'].includes(type) && trade_option.prediction !== undefined) {
             proposal.barrier = trade_option.prediction;
         } else if (trade_option.barrierOffset !== undefined) {
-            proposal.barrier = trade_option.barrierOffset;
+            proposal.barrier = getSideBarrier(type, trade_option.barrierOffset);
         }
         if (trade_option.secondBarrierOffset !== undefined) {
             proposal.barrier2 = trade_option.secondBarrierOffset;
@@ -64,7 +72,7 @@ export const tradeOptionToBuy = (contract_type, trade_option) => {
     if (!['TICKLOW', 'TICKHIGH'].includes(contract_type) && trade_option.prediction !== undefined) {
         buy.parameters.barrier = trade_option.prediction;
     } else if (trade_option.barrierOffset !== undefined) {
-        buy.parameters.barrier = trade_option.barrierOffset;
+        buy.parameters.barrier = getSideBarrier(contract_type, trade_option.barrierOffset);
     }
     if (trade_option.secondBarrierOffset !== undefined) {
         buy.parameters.barrier2 = trade_option.secondBarrierOffset;
