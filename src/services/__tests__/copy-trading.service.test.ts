@@ -1,4 +1,8 @@
-import { buildCopyTradeProposalRequest, shouldTreatConnectionAsDisconnected } from '../copy-trading.service';
+import {
+    buildCopyTradeProposalRequest,
+    getCopyContractParams,
+    shouldTreatConnectionAsDisconnected,
+} from '../copy-trading.service';
 
 describe('copy-trading service connection health', () => {
     it('does not mark the connection as disconnected while the browser is offline', () => {
@@ -49,3 +53,43 @@ describe('copy-trading service connection health', () => {
         expect(shouldTreatConnectionAsDisconnected(ws, true)).toBe(false);
     });
 });
+
+
+describe('getCopyContractParams', () => {
+    it('derives symbol and tick duration for Rise/Fall without a barrier', () => {
+        expect(
+            getCopyContractParams({
+                contract_type: 'CALL',
+                underlying_symbol: '1HZ100V',
+                shortcode: 'CALL_1HZ100V_1.80_1790884385_1T_S0P_0',
+                barrier: '1046.53',
+                entry_spot: '1046.53',
+            })
+        ).toMatchObject({ symbol: '1HZ100V', contract_type: 'CALL', duration: 1, duration_unit: 't', barrier: undefined });
+    });
+
+    it('converts an absolute Higher barrier into a signed offset', () => {
+        expect(
+            getCopyContractParams({
+                contract_type: 'CALL',
+                underlying_symbol: '1HZ100V',
+                date_start: 1000,
+                date_expiry: 1060,
+                barrier: '1047.10',
+                entry_spot: '1046.53',
+            })
+        ).toMatchObject({ contract_type: 'HIGHER', duration: 60, duration_unit: 's', barrier: '+0.57' });
+    });
+
+    it('converts an absolute Lower barrier into a negative offset', () => {
+        expect(
+            getCopyContractParams({
+                contract_type: 'PUT',
+                underlying_symbol: '1HZ100V',
+                shortcode: 'PUT_1HZ100V_1.80_1790884385_5T_S0P_0',
+                barrier: '1045.96',
+                entry_spot: '1046.53',
+            })
+        ).toMatchObject({ contract_type: 'LOWER', duration: 5, duration_unit: 't', barrier: '-0.57' });
+    });
+}); 

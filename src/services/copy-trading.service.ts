@@ -84,6 +84,54 @@ export const buildCopyTradeProposalRequest = (params: {
     ...(params.barrier2 !== undefined ? { barrier2: params.barrier2 } : {}),
 });
 
+const countDecimals = (value: string | number) => String(value).split('.')[1]?.length ?? 0;
+
+/**
+ * Convert a leader's `proposal_open_contract` into the parameters needed to re-buy it.
+ * Deriv no longer returns `underlying`, `duration` or `duration_unit` there, and reports barriers as
+ * absolute prices, so symbol, duration and the Higher/Lower offset are derived from the other fields.
+ */
+export const getCopyContractParams = (details: any) => {
+    const symbol: string | undefined = details?.underlying_symbol ?? details?.underlying;
+    let contract_type: string | undefined = details?.contract_type;
+
+    let duration: number | undefined = details?.duration;
+    let duration_unit: string | undefined = details?.duration_unit;
+    if (duration === undefined || !duration_unit) {
+        const shortcodeTicks = /_(\d+)T_/.exec(details?.shortcode ?? '');
+        if (shortcodeTicks) {
+            duration = Number(shortcodeTicks[1]);
+            duration_unit = 't';
+        } else if (details?.tick_count && !details?.date_expiry) {
+            duration = Number(details.tick_count);
+            duration_unit = 't';
+        } else if (details?.date_start && details?.date_expiry) {
+            duration = Number(details.date_expiry) - Number(details.date_start);
+            duration_unit = 's';
+        }
+    }
+
+    let barrier: string | undefined = details?.barrier !== undefined ? String(details.barrier) : undefined;
+    if (contract_type === 'CALL' || contract_type === 'PUT' || contract_type === 'HIGHER' || contract_type === 'LOWER') {
+        const isRelative = barrier !== undefined && /^[+-]/.test(barrier);
+        const entry = details?.entry_spot ?? details?.entry_tick;
+        if (!isRelative && barrier !== undefined && entry !== undefined) {
+            const offset = Number(barrier) - Number(entry);
+            const decimals = Math.max(countDecimals(barrier), countDecimals(entry));
+            // A barrier on the entry spot is a plain Rise/Fall contract, which takes no barrier.
+            barrier = Math.abs(offset) < 10 ** -(decimals + 1) ? undefined : `${offset < 0 ? '-' : '+'}${Math.abs(offset).toFixed(decimals)}`;
+        } else if (!isRelative) {
+            barrier = undefined;
+        }
+        if (barrier !== undefined) {
+            if (contract_type === 'CALL') contract_type = 'HIGHER';
+            if (contract_type === 'PUT') contract_type = 'LOWER';
+        }
+    }
+
+    return { symbol, contract_type, duration, duration_unit, barrier, barrier2: details?.barrier2 as string | undefined };
+};
+
 async function createConnection(
     token: string,
     onDisconnect?: (loginid: string) => void
@@ -528,24 +576,21 @@ export class CopyTradingService {
         // Slight delay so the contract is settled server-side
         await new Promise(r => setTimeout(r, 500));
 
-        const details = await fetchContractDetails(this.leaderConn.api, contract_id);
+        let details = await fetchContractDetails(this.leaderConn.api, contract_id);
+        // The entry spot (needed to derive a Higher/Lower offset) can arrive a moment after the buy.
+        for (let attempt = 0; attempt < 4 && details && !details.entry_spot && details.barrier !== undefined; attempt++) {
+            await new Promise(r => setTimeout(r, 1000));
+            details = (await fetchContractDetails(this.leaderConn.api, contract_id)) ?? details;
+        }
         if (!details) {
             this.onError(`Could not fetch contract details for id ${contract_id}`);
             return;
         }
 
-        const {
-            contract_type,
-            underlying: symbol,
-            duration,
-            duration_unit,
-            buy_price,
-            currency,
-            barrier,
-            barrier2,
-        } = details;
+        const { buy_price, currency } = details;
+        const { contract_type, symbol, duration, duration_unit, barrier, barrier2 } = getCopyContractParams(details);
 
-        if (!contract_type || !symbol) {
+        if (!contract_type || !symbol || duration === undefined || !duration_unit) {
             this.onError(`Incomplete contract details for id ${contract_id}`);
             return;
         }
