@@ -1,8 +1,8 @@
 export type HigherLowerSide = 'higher' | 'lower';
-export type HigherLowerContractType = 'CALL' | 'PUT';
+export type HigherLowerContractType = 'HIGHER' | 'LOWER';
 
 export const getHigherLowerContractType = (side: HigherLowerSide): HigherLowerContractType =>
-    side === 'higher' ? 'CALL' : 'PUT';
+    side === 'higher' ? 'HIGHER' : 'LOWER';
 
 export const formatHigherLowerBarrier = (barrier: string, contractType: HigherLowerContractType): string => {
     const magnitude = barrier.trim().replace(/^[+-]/, '');
@@ -10,5 +10,5 @@ export const formatHigherLowerBarrier = (barrier: string, contractType: HigherLo
         throw new Error('Higher/Lower barrier must be a positive number');
     }
 
-    return `${contractType === 'CALL' ? '+' : '-'}${magnitude}`;
+    return `${contractType === 'HIGHER' ? '+' : '-'}${magnitude}`;
 };

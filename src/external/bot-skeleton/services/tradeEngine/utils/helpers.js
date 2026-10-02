@@ -5,20 +5,17 @@ import { localize } from '@deriv-com/translations';
 import { observer as globalObserver } from '../../../utils/observer';
 import { error as logError } from './broadcast';
 
-// Higher (CALL) uses a positive relative barrier and Lower (PUT) a negative one.
-export const getSideBarrier = (contract_type, barrier) => {
-    if (typeof barrier !== 'string' || !/^[+-]\d+(\.\d+)?$/.test(barrier)) return barrier;
-    if (contract_type === 'CALL') return `+${barrier.slice(1)}`;
-    if (contract_type === 'PUT') return `-${barrier.slice(1)}`;
-    return barrier;
-};
+// Deriv accepts a barrier on Higher/Lower only with HIGHER/LOWER; CALL/PUT with a barrier is rejected as invalid.
+const HIGHER_LOWER_TYPES = { CALL: 'HIGHER', PUT: 'LOWER' };
+export const getWireContractType = (contract_type, has_barrier) =>
+    has_barrier && HIGHER_LOWER_TYPES[contract_type] ? HIGHER_LOWER_TYPES[contract_type] : contract_type;
 
 export const tradeOptionToProposal = (trade_option, purchase_reference) =>
     trade_option.contractTypes.map(type => {
         const proposal = {
             amount: trade_option.amount,
             basis: trade_option.basis,
-            contract_type: type,
+            contract_type: getWireContractType(type, trade_option.barrierOffset !== undefined),
             currency: trade_option.currency,
             duration: trade_option.duration,
             duration_unit: trade_option.duration_unit,
@@ -36,7 +33,7 @@ export const tradeOptionToProposal = (trade_option, purchase_reference) =>
         if (!['TICKLOW', 'TICKHIGH'].includes(type) && trade_option.prediction !== undefined) {
             proposal.barrier = trade_option.prediction;
         } else if (trade_option.barrierOffset !== undefined) {
-            proposal.barrier = getSideBarrier(type, trade_option.barrierOffset);
+            proposal.barrier = trade_option.barrierOffset;
         }
         if (trade_option.secondBarrierOffset !== undefined) {
             proposal.barrier2 = trade_option.secondBarrierOffset;
@@ -58,7 +55,7 @@ export const tradeOptionToBuy = (contract_type, trade_option) => {
         parameters: {
             amount: trade_option.amount,
             basis: trade_option.basis,
-            contract_type,
+            contract_type: getWireContractType(contract_type, trade_option.barrierOffset !== undefined),
             currency: trade_option.currency,
             duration: trade_option.duration,
             duration_unit: trade_option.duration_unit,
@@ -72,7 +69,7 @@ export const tradeOptionToBuy = (contract_type, trade_option) => {
     if (!['TICKLOW', 'TICKHIGH'].includes(contract_type) && trade_option.prediction !== undefined) {
         buy.parameters.barrier = trade_option.prediction;
     } else if (trade_option.barrierOffset !== undefined) {
-        buy.parameters.barrier = getSideBarrier(contract_type, trade_option.barrierOffset);
+        buy.parameters.barrier = trade_option.barrierOffset;
     }
     if (trade_option.secondBarrierOffset !== undefined) {
         buy.parameters.barrier2 = trade_option.secondBarrierOffset;

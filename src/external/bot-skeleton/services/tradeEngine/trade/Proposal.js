@@ -95,9 +95,15 @@ export default Engine =>
                                 ? getLocalizedErrorMessage(error.error.code, error.error)
                                 : error.error.message || getLocalizedErrorMessage('GeneralError');
 
+                            const echo = error.echo_req || {};
+                            const request_details = echo.barrier
+                                ? ` [${echo.contract_type} barrier ${echo.barrier}, ${echo.duration}${echo.duration_unit}${
+                                      error.error.message ? `, Deriv: ${error.error.message}` : ''
+                                  }]`
+                                : '';
                             const localizedError = {
                                 ...error.error,
-                                message: localizedErrorMessage,
+                                message: `${localizedErrorMessage}${request_details}`,
                             };
                             this.$scope.observer.emit('Error', localizedError);
                         }

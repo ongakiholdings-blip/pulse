@@ -587,7 +587,7 @@ const OverUnderEngine: React.FC = observer(() => {
             if ((takeProfit > 0 && pnl >= takeProfit) || (stopLoss > 0 && pnl <= -stopLoss)) break;
             const requests = sides.flatMap(contractType => {
                 const sideBarrier =
-                    barrier && (contractType === 'CALL' || contractType === 'PUT')
+                    barrier && (contractType === 'HIGHER' || contractType === 'LOWER')
                         ? formatHigherLowerBarrier(barrier, contractType)
                         : barrier;
                 return Array.from({ length: bulk }, () => ({
