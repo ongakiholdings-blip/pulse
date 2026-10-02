@@ -144,14 +144,14 @@
 		{
 			"label": "Serve app on port 4003",
 			"type": "shell",
-			"command": "node -e \"import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'; const root=process.cwd(); const port=4003; const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8','.mjs':'application/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.gif':'image/gif','.webp':'image/webp','.mp4':'video/mp4','.mp3':'audio/mpeg','.wav':'audio/wav','.ogg':'audio/ogg','.ico':'image/x-icon','.txt':'text/plain; charset=utf-8'}; const server=http.createServer((req,res)=>{ const reqPath = (req.url||'/').split('?')[0]; const filePath = reqPath === '/' ? path.join(root,'index.html') : path.join(root, reqPath.replace(/^\\/+/, '')); if (!filePath.startsWith(root)) { res.writeHead(403); res.end('Forbidden'); return; } fs.stat(filePath,(err,stats)=>{ if (err || !stats.isFile()) { const fallback = path.join(root,'index.html'); fs.readFile(fallback,(e,content)=>{ if (e) { res.writeHead(404); res.end('Not found'); return; } res.writeHead(200, {'Content-Type':'text/html; charset=utf-8'}); res.end(content); }); return; } const ext = path.extname(filePath).toLowerCase(); res.writeHead(200, {'Content-Type': mime[ext] || 'application/octet-stream'}); fs.createReadStream(filePath).pipe(res); });}); server.listen(port,'0.0.0.0',()=>console.log('Server running at http://localhost:'+port));\"",
+			"command": "$env:SERVE_DIR = 'dist'; $env:PORT = '4003'; node .\\serve.js",
 			"isBackground": true,
 			"problemMatcher": []
 		},
 		{
 			"label": "Serve app on port 4003",
 			"type": "shell",
-			"command": "$env:PORT = '4003'; node .\\serve.js",
+			"command": "$env:SERVE_DIR = 'dist'; $env:PORT = '4003'; node .\\serve.js",
 			"isBackground": true,
 			"problemMatcher": []
 		},

@@ -61,6 +61,29 @@ export function shouldTreatConnectionAsDisconnected(ws: WebSocket | null | undef
     return ws.readyState === WebSocket.CLOSED;
 }
 
+export const buildCopyTradeProposalRequest = (params: {
+    amount: number;
+    basis: string;
+    barrier?: string;
+    barrier2?: string;
+    contract_type: string;
+    currency: string;
+    duration: number;
+    duration_unit: string;
+    symbol: string;
+}) => ({
+    proposal: 1 as const,
+    amount: params.amount,
+    basis: params.basis,
+    contract_type: params.contract_type,
+    currency: params.currency,
+    duration: params.duration,
+    duration_unit: params.duration_unit,
+    underlying_symbol: params.symbol,
+    ...(params.barrier !== undefined ? { barrier: params.barrier } : {}),
+    ...(params.barrier2 !== undefined ? { barrier2: params.barrier2 } : {}),
+});
+
 async function createConnection(
     token: string,
     onDisconnect?: (loginid: string) => void
@@ -124,7 +147,71 @@ async function createConnection(
         ws.addEventListener('error', () => {
             if (!resolved) {
                 clearTimeout(timeout);
-                reject(new Error('WebSocket connection error'));
+                ws.close();
+                reject(
+                    new Error(
+                        'Could not connect to Deriv. Check that your network, VPN, or browser extensions allow WebSocket connections to ws.derivws.com, then try again.'
+                    )
+                );
+            }
+        });
+    });
+}
+
+async function createAccountConnection(
+    websocketUrl: string,
+    accountInfo: { loginid: string; balance?: number; currency?: string; is_virtual?: number },
+    onDisconnect?: (loginid: string) => void
+): Promise<{
+    api: InstanceType<typeof DerivAPIBasic>;
+    account: CopyAccount;
+    ws: WebSocket;
+}> {
+    return new Promise((resolve, reject) => {
+        const ws = new WebSocket(websocketUrl);
+        const api = new DerivAPIBasic({ connection: ws });
+        let settled = false;
+
+        const fail = (error: Error) => {
+            if (settled) return;
+            settled = true;
+            ws.close();
+            reject(error);
+        };
+        const timeout = setTimeout(() => fail(new Error('Timed out connecting to the selected Deriv account')), 15000);
+
+        ws.addEventListener('open', async () => {
+            try {
+                const response: any = await api.balance();
+                if (response?.error) {
+                    fail(new Error(response.error.message || 'Unable to read selected account balance'));
+                    return;
+                }
+                const balance = response?.balance;
+                const account: CopyAccount = {
+                    token: accountInfo.loginid,
+                    loginid: balance?.loginid ?? accountInfo.loginid,
+                    balance: Number(balance?.balance ?? accountInfo.balance ?? 0),
+                    currency: balance?.currency ?? accountInfo.currency ?? 'USD',
+                    is_virtual: !!(accountInfo.is_virtual ?? (balance?.loginid?.startsWith('V'))),
+                };
+                settled = true;
+                clearTimeout(timeout);
+                ws.addEventListener('close', () => {
+                    if (shouldTreatConnectionAsDisconnected(ws, typeof navigator !== 'undefined' ? navigator.onLine : true)) {
+                        onDisconnect?.(account.loginid);
+                    }
+                });
+                resolve({ api, account, ws });
+            } catch (error) {
+                fail(error instanceof Error ? error : new Error(String(error)));
+            }
+        });
+
+        ws.addEventListener('error', () => {
+            if (!settled) {
+                clearTimeout(timeout);
+                fail(new Error('Could not connect to the selected Deriv account. Check your network and try again.'));
             }
         });
     });
@@ -157,19 +244,7 @@ async function replicateTrade(
         barrier2?: string;
     }
 ): Promise<{ contract_id: number; buy_price: number }> {
-    const proposalReq: any = {
-        proposal: 1,
-        amount: params.amount,
-        basis: params.basis,
-        contract_type: params.contract_type,
-        currency: params.currency,
-        duration: params.duration,
-        duration_unit: params.duration_unit,
-        symbol: params.symbol,
-    };
-
-    if (params.barrier !== undefined) proposalReq.barrier = params.barrier;
-    if (params.barrier2 !== undefined) proposalReq.barrier2 = params.barrier2;
+    const proposalReq = buildCopyTradeProposalRequest(params);
 
     const proposalRes: any = await followerApi.send(proposalReq);
     if (proposalRes?.error) {
@@ -205,6 +280,7 @@ export class CopyTradingService {
 
     // Subscription returned by sendAndGetSource().subscribe() — has .unsubscribe()
     private txSubscription: { unsubscribe: () => void } | null = null;
+    private targetFollowerLoginids: Set<string> | null = null;
 
     private onTrade: OnTradeCallback;
     private onError: OnErrorCallback;
@@ -274,6 +350,17 @@ export class CopyTradingService {
         return conn.account;
     }
 
+    async connectLeaderFromWebSocketURL(
+        websocketUrl: string,
+        accountInfo: { loginid: string; balance?: number; currency?: string; is_virtual?: number },
+        onDisconnect?: (loginid: string) => void
+    ): Promise<CopyAccount> {
+        if (this.leaderConn) this.disconnectLeader();
+        const conn = await createAccountConnection(websocketUrl, accountInfo, onDisconnect);
+        this.leaderConn = conn;
+        return conn.account;
+    }
+
     /** Preserve the authenticated logged-in connection as a destination before switching source. */
     moveLeaderToFollower(loginid: string): boolean {
         if (!this.leaderConn || this.leaderConn.account.loginid !== loginid) return false;
@@ -339,6 +426,22 @@ export class CopyTradingService {
         return account;
     }
 
+    async connectFollowerFromWebSocketURL(
+        websocketUrl: string,
+        accountInfo: { loginid: string; balance?: number; currency?: string; is_virtual?: number },
+        onDisconnect?: (loginid: string) => void
+    ): Promise<CopyAccount> {
+        const loginid = accountInfo?.loginid ?? '';
+        if (!loginid) throw new Error('Follower loginid not provided');
+        const existing = this.followerConns.get(loginid);
+        if (existing?.ws.readyState === WebSocket.OPEN) return existing.account;
+        if (existing) this.followerConns.delete(loginid);
+
+        const conn = await createAccountConnection(websocketUrl, accountInfo, onDisconnect);
+        this.followerConns.set(loginid, conn);
+        return conn.account;
+    }
+
     /** Disconnect and remove a follower. */
     removeFollower(token: string) {
         const conn = this.followerConns.get(token);
@@ -355,10 +458,23 @@ export class CopyTradingService {
      * messages belonging to this specific subscription request — avoiding
      * cross-contamination with concurrent API calls (proposals, contract details, etc.).
      */
-    startCopying() {
+    startCopying(followerLoginids?: string[]) {
         if (!this.leaderConn) throw new Error('Leader not connected');
+        if (this.leaderConn.ws.readyState !== WebSocket.OPEN) {
+            throw new Error('Source account is not connected');
+        }
+        if (followerLoginids && followerLoginids.length === 0) {
+            throw new Error('No destination accounts selected');
+        }
+        const disconnectedTargets = followerLoginids?.filter(
+            loginid => this.followerConns.get(loginid)?.ws.readyState !== WebSocket.OPEN
+        );
+        if (disconnectedTargets?.length) {
+            throw new Error('Selected real destination account is not connected');
+        }
         // Guard: ensure only one subscription active at a time
         if (this.txSubscription) this.stopCopying();
+        this.targetFollowerLoginids = followerLoginids ? new Set(followerLoginids) : null;
 
         // sendAndGetSource sends the request and returns an Observable that
         // emits only responses for this subscription (identified by req_id).
@@ -390,6 +506,7 @@ export class CopyTradingService {
                 /* ignore */
             }
         }
+        this.targetFollowerLoginids = null;
     }
 
     /** Disconnect everything. */
@@ -449,6 +566,7 @@ export class CopyTradingService {
         };
 
         const copyPromises = Array.from(this.followerConns.entries())
+            .filter(([loginid]) => !this.targetFollowerLoginids || this.targetFollowerLoginids.has(loginid))
             .filter(([, conn]) => conn.ws.readyState === WebSocket.OPEN)
             .map(async ([token, conn]) => {
             const result: CopyTradeResult = {

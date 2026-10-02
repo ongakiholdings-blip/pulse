@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '@/hooks/useStore';
 import { localize } from '@deriv-com/translations';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
-import { isDemoAccount } from '@/utils/account-helpers';
+import { getAuthInfo } from '@/external/deriv-core/auth/storage';
+import { getAccountSocketURL } from '@/components/shared/utils/config/config';
 import './copy-trading.scss';
 
 // ── icons ────────────────────────────────────────────────────────────────────
@@ -91,6 +92,50 @@ const CopyTrading = observer(() => {
     const store = useStore();
     const ct = store.copy_trading;
     const connectingLoginid = useRef('');
+    const [selectedSourceLoginid, setSelectedSourceLoginid] = useState('');
+    const [selectedDestinationLoginid, setSelectedDestinationLoginid] = useState('');
+
+    const activeLoginid = store.client?.loginid || (api_base as any)?.account_info?.loginid || api_base?.account_id || '';
+    const canUseLinkedAccounts = Boolean(getAuthInfo()?.access_token);
+    const accountOptions = useMemo(() => {
+        const seen = new Set<string>();
+        const accounts = (store.client?.account_list ?? [])
+            .filter(account => account.loginid && (canUseLinkedAccounts || account.loginid === activeLoginid))
+            .map(account => ({
+                loginid: account.loginid,
+                currency: account.currency || 'USD',
+                balance: account.loginid === activeLoginid
+                    ? Number(store.client.balance) || account.balance || 0
+                    : Number(account.balance) || 0,
+                is_virtual: Boolean(account.is_virtual),
+            }));
+
+        if (activeLoginid && !accounts.some(account => account.loginid === activeLoginid)) {
+            accounts.unshift({
+                loginid: activeLoginid,
+                currency: store.client?.currency || (api_base as any)?.account_info?.currency || 'USD',
+                balance: Number(store.client?.balance) || Number((api_base as any)?.account_info?.balance) || 0,
+                is_virtual: Boolean(store.client?.is_virtual),
+            });
+        }
+
+        return accounts.filter(account => {
+            if (seen.has(account.loginid)) return false;
+            seen.add(account.loginid);
+            return true;
+        });
+    }, [activeLoginid, canUseLinkedAccounts, store.client?.account_list, store.client?.balance, store.client?.currency, store.client?.is_virtual]);
+
+    const formatAccountOption = (account: (typeof accountOptions)[number]) =>
+        `${account.is_virtual ? localize('Demo') : localize('Real')} · ${account.loginid} · ${account.balance.toFixed(2)} ${account.currency}`;
+
+    const handleSourceSelection = (loginid: string) => {
+        setSelectedSourceLoginid(loginid);
+        if (selectedDestinationLoginid === loginid) {
+            setSelectedDestinationLoginid('');
+            ct.removeFollower(loginid);
+        }
+    };
 
     const handleFollowerKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') ct.addFollower();
@@ -98,32 +143,47 @@ const CopyTrading = observer(() => {
 
     const handleConnectLeader = async () => {
         try {
-            const client = store.client;
             const liveApi = api_base?.api || undefined;
             const liveAccountInfo = (api_base as any)?.account_info || {};
-            const activeLoginid = client?.loginid || liveAccountInfo?.loginid || api_base?.account_id || '';
-            const activeIsVirtual = client?.is_virtual ?? liveAccountInfo?.is_virtual ?? (activeLoginid ? isDemoAccount(activeLoginid) : false);
-
-            if (!activeLoginid || !liveApi) return;
-            if (connectingLoginid.current === activeLoginid || (ct.leader_status === 'connected' && ct.leader_account?.loginid === activeLoginid)) {
+            const targetLoginid = selectedSourceLoginid || activeLoginid;
+            const account = accountOptions.find(option => option.loginid === targetLoginid);
+            if (!targetLoginid || connectingLoginid.current === targetLoginid ||
+                (ct.leader_status === 'connected' && ct.leader_account?.loginid === targetLoginid)) {
                 return;
             }
 
-            connectingLoginid.current = activeLoginid;
-            await ct.connectLeaderFromApi(liveApi, {
-                loginid: activeLoginid,
-                balance: parseFloat(String(liveAccountInfo.balance ?? client?.balance ?? 0)) || 0,
-                currency: liveAccountInfo.currency || client?.currency || 'USD',
-                is_virtual: activeIsVirtual ? 1 : 0,
-            });
+            connectingLoginid.current = targetLoginid;
+            const accountInfo = account ?? {
+                loginid: targetLoginid,
+                balance: Number(liveAccountInfo.balance) || 0,
+                currency: liveAccountInfo.currency || store.client?.currency || 'USD',
+                is_virtual: isDemoAccount(targetLoginid),
+            };
+            if (targetLoginid === activeLoginid && liveApi) {
+                await ct.connectLeaderFromApi(liveApi, {
+                    ...accountInfo,
+                    balance: Number(liveAccountInfo.balance ?? accountInfo.balance) || 0,
+                    currency: liveAccountInfo.currency || accountInfo.currency,
+                    is_virtual: accountInfo.is_virtual ? 1 : 0,
+                });
+            } else {
+                const websocketUrl = await getAccountSocketURL(targetLoginid);
+                await ct.connectLeaderFromAccount(websocketUrl, {
+                    ...accountInfo,
+                    is_virtual: accountInfo.is_virtual ? 1 : 0,
+                });
+            }
         } catch (e) {
-            console.error('Unable to connect the logged-in source account:', e);
+            console.error('Unable to connect the selected source account:', e);
         } finally {
             connectingLoginid.current = '';
         }
     };
 
     useEffect(() => {
+        if (!selectedSourceLoginid && activeLoginid) {
+            setSelectedSourceLoginid(activeLoginid);
+        }
         void handleConnectLeader();
         const retryTimer = window.setInterval(() => {
             if (ct.leader_status !== 'connected' && !ct.is_running) {
@@ -132,12 +192,47 @@ const CopyTrading = observer(() => {
         }, 1000);
 
         return () => window.clearInterval(retryTimer);
-    }, [ct, store.client]);
+    }, [activeLoginid, accountOptions, canUseLinkedAccounts, ct, selectedSourceLoginid, store.client]);
+
+    const handleConnectSelectedFollower = async () => {
+        const account = accountOptions.find(option => option.loginid === selectedDestinationLoginid);
+        if (!account || account.loginid === (selectedSourceLoginid || activeLoginid)) return;
+
+        setSelectedDestinationLoginid(account.loginid);
+        if (account.loginid === activeLoginid && api_base?.api) {
+            await ct.connectFollowerFromApi(api_base.api, {
+                ...account,
+                is_virtual: account.is_virtual ? 1 : 0,
+            });
+            return;
+        }
+
+        try {
+            const websocketUrl = await getAccountSocketURL(account.loginid);
+            await ct.connectFollowerFromAccount(websocketUrl, {
+                ...account,
+                is_virtual: account.is_virtual ? 1 : 0,
+            });
+        } catch (error) {
+            console.error('Unable to connect the selected destination account:', error);
+        }
+    };
 
     const connectedFollowers = ct.followers.filter(f => f.status === 'connected');
     const sourceAccount = ct.leader_account;
     const hasActiveFollower = connectedFollowers.length > 0;
-    const canStartButtons = !ct.is_running;
+    const hasLoggedInSource = Boolean(activeLoginid && api_base?.api);
+    const canStartCopying = !ct.is_running && ct.leader_status === 'connected' && hasActiveFollower;
+    const canStartDemoToReal =
+        !ct.is_running &&
+        ct.leader_status === 'connected' &&
+        sourceAccount?.is_virtual === true &&
+        sourceAccount.loginid === (selectedSourceLoginid || activeLoginid) &&
+        connectedFollowers.some(
+            follower =>
+                (follower.account?.loginid ?? follower.token) === selectedDestinationLoginid &&
+                follower.account?.is_virtual === false
+        );
     const canStop = ct.is_running;
     const connectionSummary = ct.is_running
         ? localize('Copy trading is active and listening for new trades.')
@@ -186,23 +281,16 @@ const CopyTrading = observer(() => {
                             <>
                                 <button
                                     className='ct2__start-btn ct2__start-btn--demo-real'
-                                    onClick={() =>
-                                        void ct.startDemoToReal(api_base?.api, {
-                                            ...(api_base as any)?.account_info,
-                                            loginid: store.client.loginid || (api_base as any)?.account_info?.loginid,
-                                            balance: parseFloat(store.client.balance) || 0,
-                                            currency: store.client.currency,
-                                        })
-                                    }
-                                    disabled={!canStartButtons}
-                                    title={localize('Copy trades from the logged-in demo account to real destinations')}
+                                    onClick={() => void ct.startDemoToReal(selectedDestinationLoginid)}
+                                    disabled={!canStartDemoToReal}
+                                    title={localize('Copy trades from the selected demo source to the selected real destination')}
                                 >
                                     <IconPlay /> {localize('Start Demo → Real')}
                                 </button>
                                 <button
                                     className='ct2__start-btn ct2__start-btn--api'
                                     onClick={() => void ct.startCopying()}
-                                    disabled={!canStartButtons}
+                                    disabled={!canStartCopying}
                                     title={localize('Activate copying to the destination API token')}
                                 >
                                     <IconPlay /> {localize('Activate API Trades')}
@@ -212,7 +300,7 @@ const CopyTrading = observer(() => {
                         <button
                             className={`ct2__start-btn ${ct.is_running ? 'ct2__start-btn--stop' : 'ct2__start-btn--trades'}`}
                             onClick={() => void (ct.is_running ? ct.stopCopying() : ct.startCopying())}
-                            disabled={!ct.is_running && !canStartButtons}
+                            disabled={!ct.is_running && !canStartCopying}
                             title={localize('Start or stop live copy trading')}
                             aria-label={ct.is_running ? localize('Stop trades') : localize('Start trades')}
                         >
@@ -221,19 +309,40 @@ const CopyTrading = observer(() => {
                         </button>
                     </div>
                 </header>
+                <p className='ct2__connection-summary' role='status'>
+                    {ct.leader_error || connectionSummary}
+                </p>
 
                 <section className='ct2__section'>
                     <div className='ct2__section-heading'>
-                        <h2>{localize('Logged-in source account')}</h2>
-                        {ct.leader_status === 'connected' ? (
+                        <h2>{localize('Source account')}</h2>
+                        {canUseLinkedAccounts && (
+                            <select
+                                className='ct2__account-select'
+                                aria-label={localize('Select source account')}
+                                value={selectedSourceLoginid || activeLoginid}
+                                onChange={event => handleSourceSelection(event.target.value)}
+                                disabled={ct.is_running || ct.leader_status === 'connecting'}
+                            >
+                                {accountOptions.map(account => (
+                                    <option key={account.loginid} value={account.loginid}>
+                                        {formatAccountOption(account)}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                        {ct.leader_status === 'connected' && ct.leader_account?.loginid === (selectedSourceLoginid || activeLoginid) ? (
                             <span className='ct2__leader-status'>{localize('Source connected')}</span>
                         ) : (
                             <button
                                 className='ct2__connect-btn'
                                 onClick={handleConnectLeader}
-                                disabled={ct.leader_status === 'connecting' || ct.is_running}
+                                disabled={(!hasLoggedInSource && !canUseLinkedAccounts) || ct.leader_status === 'connecting' || ct.is_running}
+                                title={localize('Connect the selected Deriv account as the source')}
                             >
-                                {ct.leader_status === 'connecting' ? localize('Connecting…') : localize('Use logged-in account')}
+                                {ct.leader_status === 'connecting'
+                                    ? localize('Connecting…')
+                                    : localize('Connect source account')}
                             </button>
                         )}
                     </div>
@@ -244,29 +353,66 @@ const CopyTrading = observer(() => {
                                 <strong>{sourceAccount.loginid}</strong>
                                 <small>{sourceAccount.is_virtual ? localize('Demo / DOT source') : localize('Real / ROT source')}</small>
                                 <small className='ct2__source-balance'>
-                                    {localize('Available balance')}: {fmtBalance(parseFloat(store.client.balance) || 0, store.client.currency)}
+                                    {localize('Available balance')}: {fmtBalance(sourceAccount.balance, sourceAccount.currency)}
                                 </small>
                             </span>
                         </div>
                     ) : (
-                        <div className='ct2__empty-state'>{localize('Connect the logged-in account to use it as the source.')}</div>
+                        <div className='ct2__empty-state'>{localize('Select and connect the account you want to copy trades from.')}</div>
                     )}
                     <p className='ct2__token-help'>
-                        {localize('The logged-in account is the source. Enter only the destination account token; no source token is required.')}
+                        {canUseLinkedAccounts
+                            ? localize('Choose a linked real or demo account. Its live balance is shown after connecting.')
+                            : localize('Connect with Deriv OAuth to select linked real and demo accounts. A direct API token can only access its own account.')}
                     </p>
-                 </section>
+                </section>
 
-                 {!isDemoAccount(store.client.loginid) && <section className='ct2__section'>
+                <section className='ct2__section'>
                     <div className='ct2__section-heading'>
-                        <h2>{localize('Destination API Token')}</h2>
+                        <h2>{localize('Destination account')}</h2>
                         <span className='ct2__leader-status'>{localize('Trades are copied here')}</span>
                     </div>
+                    <div className='ct2__token-row'>
+                        <select
+                            className='ct2__account-select ct2__account-select--destination'
+                            aria-label={localize('Select destination account')}
+                            value={selectedDestinationLoginid}
+                            onChange={event => setSelectedDestinationLoginid(event.target.value)}
+                            disabled={ct.is_running}
+                        >
+                            <option value=''>{localize('Select a linked account')}</option>
+                            {accountOptions
+                                .filter(account => account.loginid !== (selectedSourceLoginid || activeLoginid))
+                                .map(account => (
+                                    <option key={account.loginid} value={account.loginid}>
+                                        {formatAccountOption(account)}
+                                    </option>
+                                ))}
+                        </select>
+                        <button
+                            className='ct2__add-btn'
+                            onClick={() => void handleConnectSelectedFollower()}
+                            disabled={
+                                !selectedDestinationLoginid ||
+                                selectedDestinationLoginid === (selectedSourceLoginid || activeLoginid) ||
+                                ct.is_running ||
+                                ct.followers.some(follower => follower.token === selectedDestinationLoginid && follower.status === 'connected')
+                            }
+                        >
+                            {ct.followers.some(follower => follower.token === selectedDestinationLoginid && follower.status === 'connected')
+                                ? localize('Connected')
+                                : localize('Connect account')}
+                        </button>
+                    </div>
+                    <p className='ct2__token-help'>
+                        {localize('Select the account that should receive copied trades. The available balance is shown in the account list.')}
+                    </p>
                     <div className='ct2__token-row'>
                         <div className='ct2__token-input-wrap'>
                             <input
                                 className='ct2__token-input'
                                 type='text'
-                                placeholder={localize('Paste destination token with trading permission')}
+                                placeholder={localize('Or paste a separate destination API token')}
                                 value={ct.new_follower_token}
                                 onChange={e => ct.setNewFollowerToken(e.target.value)}
                                 onKeyDown={handleFollowerKeyDown}
@@ -285,8 +431,7 @@ const CopyTrading = observer(() => {
                             disabled={ct.is_running} />
                         <span className='ct2__multiplier-hint'>{localize('1.0 copies the original stake')}</span>
                     </div>
-                    {ct.leader_error && <span className='ct2__error-text'>{ct.leader_error}</span>}
-                </section>}
+                </section>
 
                 <section className='ct2__section ct2__clients'>
                     <div className='ct2__section-heading'>

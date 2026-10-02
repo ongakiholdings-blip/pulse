@@ -2,7 +2,7 @@ import { action, makeObservable, observable, runInAction } from 'mobx';
 import { CopyAccount, CopyTradeLog, CopyTradingService } from '@/services/copy-trading.service';
 import type { DerivAccount } from '@/services/derivws-accounts.service';
 import { isDemoAccount } from '@/utils/account-helpers';
-import { getMarketingDemoLoginid, getMarketingRealLoginid, isMarketingCR } from '@/utils/marketing-balance';
+import { getMarketingDemoLoginid, isMarketingCR } from '@/utils/marketing-balance';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 
 export type FollowerEntry = {
@@ -10,6 +10,7 @@ export type FollowerEntry = {
     account: CopyAccount | null;
     status: 'pending' | 'connected' | 'error';
     error: string;
+    authMethod?: 'token' | 'api' | 'account';
 };
 
 export function resolveAutoFollowerToken({
@@ -94,8 +95,10 @@ export default class CopyTradingStore {
     private followerAccountInfo: any = null;
     private leaderApiInstance: any = null;
     private leaderAccountInfo: any = null;
+    private leaderConnectionMethod: 'token' | 'api' | 'account' = 'token';
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     private copySessionVersion = 0;
+    private copyTargetLoginids: string[] | null = null;
 
     constructor() {
         makeObservable(this, {
@@ -144,6 +147,7 @@ export default class CopyTradingStore {
         this.leader_status = 'connecting';
         this.leader_error = '';
         this.leader_account = null;
+        this.leaderConnectionMethod = 'token';
         try {
             this.ensureService();
             const account = await this.service!.connectLeader(
@@ -179,6 +183,7 @@ export default class CopyTradingStore {
         this.leader_account = null;
         this.leaderApiInstance = api_instance;
         this.leaderAccountInfo = account_info;
+        this.leaderConnectionMethod = 'api';
         try {
             this.ensureService();
             const account = await this.service!.connectLeaderFromApi(api_instance, account_info, action((_loginid: string) => {
@@ -204,6 +209,41 @@ export default class CopyTradingStore {
         }
     };
 
+    connectLeaderFromAccount = async (
+        websocketUrl: string,
+        accountInfo: { loginid: string; balance?: number; currency?: string; is_virtual?: number }
+    ) => {
+        this.leader_status = 'connecting';
+        this.leader_error = '';
+        this.leader_account = null;
+        this.leaderApiInstance = null;
+        this.leaderAccountInfo = accountInfo;
+        this.leaderConnectionMethod = 'account';
+        try {
+            this.ensureService();
+            const account = await this.service!.connectLeaderFromWebSocketURL(
+                websocketUrl,
+                accountInfo,
+                action(() => {
+                    this.leader_status = 'error';
+                    this.leader_error = 'Source account connection lost — reconnecting…';
+                    if (this.is_running) this.service?.stopCopying();
+                    this.scheduleReconnect();
+                })
+            );
+            runInAction(() => {
+                this.leader_account = account;
+                this.leader_status = 'connected';
+                this.leader_token = account.loginid;
+            });
+        } catch (error) {
+            runInAction(() => {
+                this.leader_status = 'error';
+                this.leader_error = error instanceof Error ? error.message : 'Connection failed';
+            });
+        }
+    };
+
     /**
      * Disconnect the leader and reset back to idle so a new token can be entered.
      */
@@ -218,6 +258,9 @@ export default class CopyTradingStore {
         this.leader_status = 'idle';
         this.leader_error = '';
         this.leader_token = '';
+        this.leaderConnectionMethod = 'token';
+        this.leaderApiInstance = null;
+        this.leaderAccountInfo = null;
     };
 
     setNewFollowerToken = (token: string) => {
@@ -271,6 +314,7 @@ export default class CopyTradingStore {
                 account: null,
                 status: 'pending',
                 error: '',
+                authMethod: 'token',
             });
         }
         this.new_follower_token = '';
@@ -329,6 +373,7 @@ export default class CopyTradingStore {
             account: null,
             status: 'pending',
             error: '',
+            authMethod: 'api',
         };
         this.followers.push(entry);
 
@@ -362,6 +407,67 @@ export default class CopyTradingStore {
         }
     };
 
+    connectFollowerFromAccount = async (
+        websocketUrl: string,
+        accountInfo: { loginid: string; balance?: number; currency?: string; is_virtual?: number }
+    ) => {
+        const loginid = accountInfo?.loginid || '';
+        if (!loginid) return null;
+        if (loginid === this.leader_account?.loginid) {
+            this.leader_error = 'Source and destination accounts must be different';
+            return null;
+        }
+
+        const existing = this.followers.find(follower => follower.token === loginid);
+        if (existing?.status === 'connected') return existing.account;
+        if (existing) {
+            existing.status = 'pending';
+            existing.error = '';
+            existing.authMethod = 'account';
+        } else {
+            this.followers.push({
+                token: loginid,
+                account: null,
+                status: 'pending',
+                error: '',
+                authMethod: 'account',
+            });
+        }
+
+        try {
+            this.ensureService();
+            const account = await this.service!.connectFollowerFromWebSocketURL(
+                websocketUrl,
+                accountInfo,
+                action(disconnectedLoginid => {
+                    const follower = this.followers.find(entry => entry.token === disconnectedLoginid);
+                    if (follower) {
+                        follower.status = 'error';
+                        follower.error = 'Connection lost — reconnecting…';
+                        if (this.is_running) this.scheduleReconnect();
+                    }
+                })
+            );
+            runInAction(() => {
+                const follower = this.followers.find(entry => entry.token === loginid);
+                if (follower) {
+                    follower.account = account;
+                    follower.status = 'connected';
+                }
+            });
+            return account;
+        } catch (error) {
+            runInAction(() => {
+                const follower = this.followers.find(entry => entry.token === loginid);
+                if (follower) {
+                    follower.status = 'error';
+                    follower.error = error instanceof Error ? error.message : 'Connection failed';
+                }
+            });
+            return null;
+        }
+    };
+
     removeFollower = (token: string) => {
         this.service?.removeFollower(token);
         this.followers = this.followers.filter(f => f.token !== token);
@@ -378,26 +484,45 @@ export default class CopyTradingStore {
     };
 
     private recoverFromDisconnect = async () => {
-        if (!this.leaderApiInstance || !this.leaderAccountInfo) return;
+        if ((!this.leaderApiInstance && this.leaderConnectionMethod !== 'account') || !this.leaderAccountInfo) return;
         const wasRunning = this.is_running;
         const sessionVersion = this.copySessionVersion;
 
         try {
             this.leader_status = 'connecting';
             this.leader_error = '';
-            const currentApi = api_base?.api || this.leaderApiInstance;
-            const currentAccountInfo = (api_base as any)?.account_info || this.leaderAccountInfo;
-            await this.connectLeaderFromApi(currentApi, currentAccountInfo);
+            if (this.leaderConnectionMethod === 'account' && this.leaderAccountInfo?.loginid) {
+                const { getAccountSocketURL } = await import('@/components/shared/utils/config/config');
+                const websocketUrl = await getAccountSocketURL(this.leaderAccountInfo.loginid);
+                await this.connectLeaderFromAccount(websocketUrl, this.leaderAccountInfo);
+            } else {
+                const currentApi = api_base?.api || this.leaderApiInstance;
+                const currentAccountInfo = (api_base as any)?.account_info || this.leaderAccountInfo;
+                await this.connectLeaderFromApi(currentApi, currentAccountInfo);
+            }
 
             if (this.followerApiInstance && this.followerAccountInfo) {
                 await this.connectFollowerFromApi(this.followerApiInstance, this.followerAccountInfo);
+            }
+            const accountFollowers = this.followers.filter(
+                follower => follower.authMethod === 'account' && follower.status !== 'connected'
+            );
+            for (const follower of accountFollowers) {
+                const { getAccountSocketURL } = await import('@/components/shared/utils/config/config');
+                const websocketUrl = await getAccountSocketURL(follower.token);
+                const accountInfo = follower.account ?? {
+                    loginid: follower.token,
+                    balance: 0,
+                    currency: 'USD',
+                };
+                await this.connectFollowerFromAccount(websocketUrl, accountInfo);
             }
             const tokenFollowers = this.followers.filter(f => f.account?.token === f.token && f.status !== 'connected');
             for (const follower of tokenFollowers) {
                 await this.addFollower(follower.token);
             }
             if (wasRunning && sessionVersion === this.copySessionVersion) {
-                await this.startCopying();
+                await this.startCopying(this.copyTargetLoginids ?? undefined);
             }
         } catch (e: any) {
             this.leader_status = 'error';
@@ -405,100 +530,64 @@ export default class CopyTradingStore {
         }
     };
 
-    startCopying = async () => {
+    startCopying = async (followerLoginids?: string[]) => {
         if (this.is_running) return;
         if (this.leader_status !== 'connected') {
             this.leader_error = 'Connect the logged-in source account before starting';
             return;
         }
 
-        if (this.followers.filter(f => f.status === 'connected').length === 0 && this.followerApiInstance && this.followerAccountInfo) {
+        if (!followerLoginids && this.followers.filter(f => f.status === 'connected').length === 0 && this.followerApiInstance && this.followerAccountInfo) {
             await this.connectFollowerFromApi(this.followerApiInstance, this.followerAccountInfo);
         }
 
-        if (this.followers.filter(f => f.status === 'connected').length === 0) {
+        const connectedFollowers = this.followers.filter(f => f.status === 'connected');
+        const targetFollowers = followerLoginids
+            ? connectedFollowers.filter(follower => followerLoginids.includes(follower.account?.loginid ?? follower.token))
+            : connectedFollowers;
+        if (targetFollowers.length === 0 || (followerLoginids && targetFollowers.length !== followerLoginids.length)) {
             this.leader_error = 'Add and connect a destination API token before starting';
             return;
         }
 
+        this.copyTargetLoginids = followerLoginids ?? null;
         if (this.service) {
             this.service.stakeMultiplier = this.stake_multiplier;
         }
 
         try {
-            this.service!.startCopying();
+            this.service!.startCopying(followerLoginids);
             this.is_running = true;
             this.leader_error = '';
         } catch (e: any) {
+            this.copyTargetLoginids = null;
             this.leader_error = e?.message ?? 'Failed to start';
         }
     };
 
-    startDemoToReal = async (destinationApi?: any, destinationAccountInfo?: any) => {
+    startDemoToReal = async (destinationLoginid: string) => {
         if (this.is_running) return;
-        try {
-            const currentLoginid = this.leader_account?.loginid || '';
-            const storedAccounts = JSON.parse(sessionStorage.getItem('deriv_accounts') || '[]') as DerivAccount[];
-            const currentIsDemo = !!this.leader_account?.is_virtual;
-            let demoLoginid = currentIsDemo ? currentLoginid : null;
-            let realLoginid = currentIsDemo ? null : currentLoginid;
-
-            if (!demoLoginid && currentLoginid) {
-                demoLoginid = getMarketingDemoLoginid(currentLoginid);
-                realLoginid = currentLoginid;
-            }
-            if (!demoLoginid) {
-                demoLoginid = storedAccounts.find(account => account.account_type === 'demo')?.account_id ?? null;
-            }
-            if (!realLoginid) {
-                realLoginid = getMarketingRealLoginid(demoLoginid || '');
-                realLoginid = realLoginid || storedAccounts.find(account => account.account_type === 'real')?.account_id || null;
-            }
-
-            const tokenMap = JSON.parse(localStorage.getItem('accountsList') || '{}') as Record<string, unknown>;
-            const demoToken = demoLoginid && typeof tokenMap[demoLoginid] === 'string' ? tokenMap[demoLoginid] : '';
-            const realToken = realLoginid && typeof tokenMap[realLoginid] === 'string' ? tokenMap[realLoginid] : '';
-
-            if (currentIsDemo) {
-                // The active demo API is already the leader. The paired real
-                // account must be opened as a separate follower connection.
-                if (!realToken) {
-                    this.leader_error = 'The paired real account is not available in the logged-in session';
-                    return;
-                }
-                if (!this.followers.some(follower => follower.account?.loginid === realLoginid)) {
-                    await this.addFollower(realToken);
-                }
-            } else {
-                if (!demoToken) {
-                    this.leader_error = 'The paired demo account is not available in the logged-in session';
-                    return;
-                }
-                if (!destinationApi || !destinationAccountInfo?.loginid) {
-                    this.leader_error = 'The logged-in real account is not available as a destination';
-                    return;
-                }
-
-                this.ensureService();
-                this.service!.moveLeaderToFollower(realLoginid);
-                if (!this.followers.some(follower => follower.account?.loginid === destinationAccountInfo.loginid)) {
-                    await this.connectFollowerFromApi(destinationApi, {
-                        ...destinationAccountInfo,
-                        is_virtual: 0,
-                    });
-                }
-                await this.connectLeader(demoToken);
-            }
-            await this.startCopying();
-        } catch (error: any) {
-            this.leader_error = error?.message ?? 'Unable to prepare the paired real account';
+        if (this.leader_status !== 'connected' || !this.leader_account?.is_virtual) {
+            this.leader_error = 'Connect a demo account as the source before starting Demo to Real';
+            return;
         }
+        const destination = this.followers.find(
+            follower =>
+                follower.status === 'connected' &&
+                (follower.account?.loginid ?? follower.token) === destinationLoginid
+        );
+        if (!destination || destination.account?.is_virtual !== false) {
+            this.leader_error = 'Connect a real account as the destination before starting Demo to Real';
+            return;
+        }
+        await this.startCopying([destinationLoginid]);
     };
 
     stopCopying = () => {
         this.copySessionVersion++;
         this.service?.stopCopying();
         this.is_running = false;
+        this.copyTargetLoginids = null;
     };
 
     setStakeMultiplier = (val: number) => {

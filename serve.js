@@ -2,7 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const rootDir = process.cwd();
+const rootDir = path.resolve(process.env.SERVE_DIR || 'dist');
 const port = Number(process.env.PORT || 5000);
 
 const mimeTypes = {

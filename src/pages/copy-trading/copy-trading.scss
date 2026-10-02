@@ -123,6 +123,13 @@
             &--offline { background: #f7f1ff; }
         }
 
+        &__connection-summary {
+            margin: 1.2rem 0 0;
+            color: #6b587e;
+            font-size: 1.2rem;
+            line-height: 1.5;
+        }
+
         &__start-btn,
         &__add-btn,
         &__connect-btn {
@@ -184,6 +191,22 @@
 
         &__token-row { gap: 0.8rem; margin-top: 1.2rem; }
         &__token-input-wrap { position: relative; flex: 1; min-width: 0; color: #6d5e7c; }
+
+        &__account-select {
+            min-width: 0;
+            min-height: 3.8rem;
+            padding: 0.6rem 1rem;
+            border: 1px solid #c6a8ff;
+            border-radius: 0.4rem;
+            background: #faf7ff;
+            color: #25133f;
+            font-size: 1.2rem;
+
+            &:focus { outline: none; border-color: #7b36c7; box-shadow: 0 0 0 0.2rem rgb(123 54 199 / 15%); }
+            &:disabled { cursor: not-allowed; opacity: 0.6; }
+
+            &--destination { flex: 1; }
+        }
 
         &__token-input {
             width: 100%;

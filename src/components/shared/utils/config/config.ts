@@ -111,6 +111,25 @@ export const getSocketURL = async (): Promise<string> => {
     }
 };
 
+export const getAccountSocketURL = async (accountId: string): Promise<string> => {
+    if (!accountId) throw new Error('Account ID is required to connect an account');
+
+    let authInfo = getAuthInfo();
+    if (!authInfo?.access_token) {
+        throw new Error('Log in with Deriv to select linked accounts');
+    }
+
+    if (authInfo.expires_at && Date.now() >= authInfo.expires_at * 1000) {
+        if (!authInfo.refresh_token || !process.env.NEXT_PUBLIC_DERIV_APP_ID) {
+            throw new Error('Your login session has expired. Log in again to select linked accounts');
+        }
+        authInfo = await refreshAccessToken(authInfo.refresh_token, process.env.NEXT_PUBLIC_DERIV_APP_ID);
+        storeAuthInfo(authInfo);
+    }
+
+    return DerivWSAccountsService.fetchOTPWebSocketURL(authInfo.access_token, accountId);
+};
+
 export const getDebugServiceWorker = () => {
     const debug_service_worker_flag = window.localStorage.getItem('debug_service_worker');
     if (debug_service_worker_flag) return !!parseInt(debug_service_worker_flag);

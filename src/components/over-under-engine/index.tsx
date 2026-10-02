@@ -16,6 +16,11 @@ import {
 import { localize } from '@deriv-com/translations';
 import { botNotification, sessionCompleteNotification } from '@/components/bot-notification/bot-notification';
 import ChartWrapper from '@/pages/chart/chart-wrapper';
+import {
+    formatHigherLowerBarrier,
+    getHigherLowerContractType,
+    type HigherLowerContractType,
+} from './higher-lower-contract';
 import './over-under-engine.scss';
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -503,7 +508,7 @@ const OverUnderEngine: React.FC = observer(() => {
         side: 'higher' | 'lower' = 'higher',
         duration = Number(higherLowerDuration) || 5
     ): Promise<string> => {
-        const contractType = side === 'lower' ? 'PUT' : 'CALL';
+        const contractType = getHigherLowerContractType(side);
         const currency = (api_base as any).account_info?.currency || (client as any)?.currency || 'USD';
         const response = await (api_base.api as any).send({
             proposal: 1,
@@ -516,11 +521,13 @@ const OverUnderEngine: React.FC = observer(() => {
             underlying_symbol: symbol,
         });
         const proposal = response?.proposal;
-        const barrier = proposal?.barrier ?? proposal?.high_barrier ?? proposal?.low_barrier;
+        const barrier =
+            proposal?.barrier ??
+            (side === 'higher' ? proposal?.high_barrier : proposal?.low_barrier);
         if (barrier === undefined || barrier === null || barrier === '') {
             throw new Error(`Deriv did not return a live ${side} barrier for this market`);
         }
-        return String(barrier).trim();
+        return formatHigherLowerBarrier(String(barrier), contractType);
     }, [client, higherLowerDuration, higherLowerStake]);
 
     useEffect(() => {
@@ -578,28 +585,43 @@ const OverUnderEngine: React.FC = observer(() => {
         setStatus(`Running ${label}…`);
         while (!stopRef.current) {
             if ((takeProfit > 0 && pnl >= takeProfit) || (stopLoss > 0 && pnl <= -stopLoss)) break;
-            const requests = sides.flatMap(contractType => Array.from({ length: bulk }, () => ({
-                buy: '1',
-                price: amount,
-                parameters: {
-                    amount, basis: 'stake', contract_type: contractType,
-                    currency: (api_base as any).account_info?.currency || (client as any)?.currency || 'USD',
-                    duration, duration_unit: 't', ...(barrier ? { barrier } : {}),
-                    underlying_symbol: chart_store.symbol || '1HZ10V',
-                },
-            })));
+            const requests = sides.flatMap(contractType => {
+                const sideBarrier =
+                    barrier && (contractType === 'CALL' || contractType === 'PUT')
+                        ? formatHigherLowerBarrier(barrier, contractType)
+                        : barrier;
+                return Array.from({ length: bulk }, () => ({
+                    contractType,
+                    barrier: sideBarrier,
+                    request: {
+                        buy: '1',
+                        price: amount,
+                        parameters: {
+                            amount,
+                            basis: 'stake',
+                            contract_type: contractType,
+                            currency: (api_base as any).account_info?.currency || (client as any)?.currency || 'USD',
+                            duration,
+                            duration_unit: 't',
+                            ...(sideBarrier ? { barrier: sideBarrier } : {}),
+                            underlying_symbol: chart_store.symbol || '1HZ10V',
+                        },
+                    },
+                }));
+            });
             try {
-                const responses = await Promise.all(requests.map(request => api.send(request)));
+                const responses = await Promise.all(requests.map(({ request }) => api.send(request)));
                 const contracts = responses.map(response => response?.buy?.contract_id).filter(Boolean);
                 if (!contracts.length) throw new Error('No contracts were purchased');
-                responses.forEach(response => {
+                responses.forEach((response, index) => {
                     const buy = response?.buy;
                     if (!buy?.contract_id) return;
+                    const request = requests[index];
                     transactions.onBotContractEvent({
                         ...buy,
                         contract_id: buy.contract_id,
-                        contract_type: buy.contract_type,
-                        barrier: barrier ?? '',
+                        contract_type: buy.contract_type ?? request.contractType,
+                        barrier: buy.barrier ?? request.barrier ?? '',
                         underlying_symbol: chart_store.symbol || '1HZ10V',
                         currency: buy.currency ?? (api_base as any).account_info?.currency ?? 'USD',
                         buy_price: buy.buy_price ?? amount,
@@ -659,10 +681,13 @@ const OverUnderEngine: React.FC = observer(() => {
             return;
         }
 
-        const sides = higherLowerSide === 'both' ? ['CALL', 'PUT'] : [higherLowerSide === 'higher' ? 'CALL' : 'PUT'];
+        const sides: HigherLowerContractType[] =
+            higherLowerSide === 'both'
+                ? [getHigherLowerContractType('higher'), getHigherLowerContractType('lower')]
+                : [getHigherLowerContractType(higherLowerSide)];
         const symbol = chart_store.symbol || '1HZ10V';
         const barrier = higherLowerBarrier.trim();
-        if (!barrier || !/^[+-]?\d+(?:\.\d+)?$/.test(barrier)) {
+        if (!barrier || !/^[+-]?\d+(?:\.\d+)?$/.test(barrier) || Number(barrier) === 0) {
             setHigherLowerStatus('Enter a valid barrier, for example +64.64 or -64.64');
             return;
         }
