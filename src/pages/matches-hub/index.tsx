@@ -4,7 +4,7 @@ import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observab
 import { useApiBase } from '@/hooks/useApiBase';
 import { useStore } from '@/hooks/useStore';
 import { contract_stages } from '@/constants/contract-stage';
-import { rankObservedDigits } from './digit-ranking';
+import { type MarketScan, scanMarkets as runMarketScan, scoreDigits } from './digit-scanner';
 import './matches-hub.scss';
 
 const DIGITS = Array.from({ length: 10 }, (_, digit) => digit);
@@ -82,6 +82,8 @@ const MatchesHub = () => {
     const [isTrading, setIsTrading] = useState(false);
     const [status, setStatus] = useState('Connecting to live market dataâ€¦');
     const [contracts, setContracts] = useState<MatchContract[]>([]);
+    const [isScanning, setIsScanning] = useState(false);
+    const [scanResults, setScanResults] = useState<MarketScan[]>([]);
     const subscriptionId = useRef<string | null>(null);
     const contractIds = useRef<Set<number>>(new Set());
     const liveDigits = useRef<number[]>([]);
@@ -235,8 +237,8 @@ const MatchesHub = () => {
     const maxCount = Math.max(1, ...counts);
     const minCount = Math.min(...counts);
     const digitRanking = useMemo(
-        () => rankObservedDigits(digitHistory, candidateCount),
-        [candidateCount, digitHistory]
+        () => scoreDigits(digitHistory, contractType, candidateCount),
+        [candidateCount, contractType, digitHistory]
     );
     const rankedDigits = useMemo(
         () => [...DIGITS].sort((a, b) => counts[b] - counts[a] || a - b),
@@ -252,7 +254,7 @@ const MatchesHub = () => {
     );
     const recommendedDigit = rankedDigits[0];
     const liveDigit = currentTick === '--' ? null : getLastDigit(currentTick, api_base.pip_sizes?.[symbol]);
-    const aiDigits = digitRanking.recommendations.map(item => item.digit);
+    const aiDigits = digitRanking.picks.map(item => item.digit);
     const tradeDigits = aiEnabled
         ? aiDigits
         : batch === 'One digit' ? selectedDigits.slice(0, 1) : selectedDigits;
@@ -260,6 +262,38 @@ const MatchesHub = () => {
         ? aiEnabled && !digitRanking.hasEnoughData ? 'Waiting for sufficient tick history' : 'Select a digit to trade'
         : `${contractType} ${tradeDigits.join(', ')}`;
 
+    const scanMarkets = async () => {
+        const api = api_base.api as any;
+        if (!api || connectionStatus !== CONNECTION_STATUS.OPENED) {
+            setStatus('The shared Deriv WebSocket is disconnected. Reconnect before scanning.');
+            return;
+        }
+        if (isScanning) return;
+        setIsScanning(true);
+        setStatus(`Scanning ${Object.keys(MARKETS).length} markets…`);
+        try {
+            const results = await runMarketScan({
+                api,
+                markets: MARKETS,
+                contract: contractType,
+                pickCount: candidateCount,
+                tickCount: historyCount,
+                getLastDigit,
+                onProgress: (done, total) => setStatus(`Scanning markets… ${done}/${total}`),
+            });
+            setScanResults(results);
+            if (!results.length) {
+                setStatus('Scan finished but no market returned enough tick history.');
+                return;
+            }
+            const best = results[0];
+            setAiEnabled(true);
+            setMarket(best.market);
+            setStatus(`Scan complete: ${best.market} — ${contractType} ${best.picks.map(pick => pick.digit).join(', ')} (score ${best.score.toFixed(1)}) across ${results.length} markets.`);
+        } finally {
+            setIsScanning(false);
+        }
+    };
     const selectDigit = (digit: number) => {
         if (batch === 'One digit') {
             setSelectedDigits([digit]);
@@ -463,31 +497,53 @@ const MatchesHub = () => {
                                     </select>
                                 </label>
                                 <p>{digitRanking.sampleSize} observed ticks Â· recency-weighted frequency</p>
+                                <button
+                                    className='matches-hub__scan-button'
+                                    disabled={isScanning || connectionStatus !== CONNECTION_STATUS.OPENED}
+                                    onClick={() => void scanMarkets()}
+                                    type='button'
+                                >
+                                    {isScanning ? 'Scanning marketsâ€¦' : `Scan markets · top ${candidateCount} digit${candidateCount === 1 ? '' : 's'}`}
+                                </button>
                             </div>
+                            {scanResults.length > 0 && (
+                                <ol className='matches-hub__scan-results' aria-label='Market scan results'>
+                                    {scanResults.slice(0, 5).map((result, index) => (
+                                        <li className={result.market === market ? 'is-selected' : ''} key={result.market}>
+                                            <button onClick={() => setMarket(result.market)} type='button'>
+                                                <span className='matches-hub__candidate-rank'>#{index + 1}</span>
+                                                <strong>{result.market}</strong>
+                                                <span>{contractType} {result.picks.map(pick => pick.digit).join(', ')}</span>
+                                                <small>score {result.score.toFixed(1)}</small>
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
                             <ol className='matches-hub__ranked-candidates' aria-label={`Top ${candidateCount} observed digit candidates`}>
-                                {digitRanking.rankedDigits.slice(0, 5).map(item => {
+                                {digitRanking.signals.slice(0, 5).map(item => {
                                     const isSelected = digitRanking.hasEnoughData && item.rank <= candidateCount;
                                     return (
                                         <li
-                                            aria-label={`Rank ${item.rank}, digit ${item.digit}, ${item.weightedPercent.toFixed(1)}% recency-weighted${isSelected ? ', selected for trade' : ''}`}
+                                            aria-label={`Rank ${item.rank}, digit ${item.digit}, score ${item.score.toFixed(1)}, ${item.strength} signal${isSelected ? ', selected for trade' : ''}`}
                                             className={isSelected ? 'is-selected' : ''}
                                             key={item.digit}
                                         >
                                             <span className='matches-hub__candidate-rank'>#{item.rank}</span>
                                             <strong>{item.digit}</strong>
-                                            <span>{item.weightedPercent.toFixed(1)}% weighted</span>
-                                            <small>{item.observedCount} observed</small>
+                                            <span>{item.percent.toFixed(1)}% · {item.recentPercent.toFixed(0)}% recent</span>
+                                            <small>score {item.score.toFixed(1)} · {item.strength} · gap {item.gap}</small>
                                         </li>
                                     );
                                 })}
                             </ol>
                             {digitRanking.hasEnoughData ? (
                                 <p className='matches-hub__ai-context'>
-                                    Selected {candidateCount} distinct digit{candidateCount === 1 ? '' : 's'} by rank. Scores summarize this sample; they do not predict future ticks.
+                                    Selected {candidateCount} distinct digit{candidateCount === 1 ? '' : 's'} by {contractType === 'Matches' ? 'over-representation' : 'under-representation'} score. Scores summarize this sample; they do not predict future ticks.
                                 </p>
                             ) : (
                                 <p className='matches-hub__ai-context matches-hub__ai-context--notice' role='status'>
-                                    Need at least 10 valid ticks before selecting ranked digits ({digitRanking.sampleSize}/10 observed).
+                                    Need at least 100 valid ticks before selecting ranked digits ({digitRanking.sampleSize}/100 observed).
                                 </p>
                             )}
                         </div>

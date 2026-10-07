@@ -1196,7 +1196,7 @@
         url('../../assets/green-abstract-gradient-background.jpg') center / cover;
     box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 50%), 0 0 1.2rem rgb(52 211 153 / 38%);
     animation:
-        ai-bounce 1.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite,
+        ai-float 4s ease-in-out infinite,
         ai-green-pulse 2.6s ease-in-out infinite;
 
     &::before {
@@ -1223,13 +1223,79 @@
         border-color: #022c22;
     }
 
+    // Same visuals as the app loader: tilted orbit rings with glowing dots and a pulsing halo.
     &__wave,
     &__wave:nth-child(1),
     &__wave:nth-child(2),
     &__wave:nth-child(3) {
-        border-color: rgb(110 231 183 / 68%);
-        box-shadow: 0 0 1rem rgb(52 211 153 / 32%);
+        animation-delay: 0s;
+        animation-iteration-count: infinite;
+        animation-timing-function: linear;
+        border: 1px solid rgb(81 255 224 / 75%);
+        box-shadow: 0 0 0.9rem rgb(0 237 145 / 20%), inset 0 0 0.8rem rgb(0 237 145 / 12%);
+
+        &::before {
+            border-radius: 50%;
+            content: '';
+            position: absolute;
+        }
     }
+
+    &__wave:nth-child(1) {
+        animation-name: ai-ring-turn;
+        animation-duration: 13s;
+        inset: -14% -34%;
+        transform: rotateX(68deg) rotateZ(-12deg);
+
+        &::before {
+            background: #51ffe0;
+            box-shadow: 0 0 1rem #51ffe0;
+            height: 0.55rem;
+            left: 14%;
+            top: 5%;
+            width: 0.55rem;
+        }
+    }
+
+    &__wave:nth-child(2) {
+        animation-direction: reverse;
+        animation-name: ai-ring-turn;
+        animation-duration: 9s;
+        border-color: rgb(0 237 145 / 82%);
+        inset: -8% -26%;
+        transform: rotateX(70deg) rotateZ(38deg);
+
+        &::before {
+            background: #dffff4;
+            box-shadow: 0 0 0.8rem #00ed91;
+            height: 0.4rem;
+            left: 80%;
+            top: 5%;
+            width: 0.4rem;
+        }
+    }
+
+    &__wave:nth-child(3) {
+        animation-name: ai-halo-pulse;
+        animation-duration: 3s;
+        animation-timing-function: ease-out;
+        border-color: rgb(0 237 145 / 65%);
+        box-shadow: none;
+        inset: -9%;
+    }
+}
+
+@keyframes ai-ring-turn {
+    to { rotate: 360deg; }
+}
+
+@keyframes ai-halo-pulse {
+    0% { opacity: 0.8; transform: scale(0.94); }
+    100% { opacity: 0; transform: scale(1.28); }
+}
+
+@keyframes ai-float {
+    50% { transform: translateY(-0.4rem); }
 }
 
 @keyframes ai-green-pulse {

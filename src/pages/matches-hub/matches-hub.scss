@@ -65,6 +65,13 @@
     &__ranked-candidates strong { color: #fff; font-size: 1.25rem; }
     &__ranked-candidates li > span:nth-last-of-type(1), &__ranked-candidates small { font-size: 0.58rem; line-height: 1.25; }
     &__ranked-candidates small { color: #b8e6d5; }
+    &__ai-controls { flex-wrap: wrap; }
+    &__scan-button { padding: 0.5rem 0.8rem; border: 1px solid #34d399; border-radius: 0.35rem; background: linear-gradient(145deg, rgb(4 120 87 / 70%), rgb(6 78 59 / 85%)); color: #ecfdf5; font-weight: 700; cursor: pointer; }
+    &__scan-button:disabled { opacity: 0.55; cursor: not-allowed; }
+    &__scan-results { display: grid; gap: 0.35rem; margin: 0.65rem 0 0; padding: 0; list-style: none; }
+    &__scan-results button { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 0.6rem; width: 100%; padding: 0.4rem 0.6rem; border: 1px solid rgb(148 163 184 / 35%); border-radius: 0.35rem; background: rgb(15 23 42 / 56%); color: #cbd5e1; font-size: 0.75rem; text-align: start; cursor: pointer; }
+    &__scan-results li.is-selected button { border-color: #34d399; background: linear-gradient(145deg, rgb(4 120 87 / 55%), rgb(6 78 59 / 72%)); color: #ecfdf5; }
+    &__scan-results small { color: #b8e6d5; }
     &__ai-context { margin: 0.55rem 0 0; color: #b8e6d5; font-size: 0.68rem; line-height: 1.45; }
     &__ai-context--notice { color: #fcd34d; }
     button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #6ee7b7; outline-offset: 2px; }
