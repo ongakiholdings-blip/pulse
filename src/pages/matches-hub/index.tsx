@@ -481,6 +481,15 @@ const MatchesHub = () => {
         setStatus('Stop requested. Waiting for open contracts to settle before ending the run.');
     };
 
+    const requestRunStopRef = useRef(requestRunStop);
+    requestRunStopRef.current = requestRunStop;
+
+    // Lets the shared run-panel Stop button end an auto-run started here.
+    useEffect(() => {
+        run_panel.registerAiBotStopHandler?.(() => requestRunStopRef.current());
+        return () => run_panel.unregisterAiBotStopHandler?.();
+    }, [run_panel]);
+
     return (
         <section className='matches-hub' aria-label='Matches-HUB'>
             <div className='matches-hub__shell'>
