@@ -318,7 +318,7 @@ const OverUnderEngine: React.FC = observer(() => {
     const [symbol, setSymbol]         = useState('1HZ10V');
     const [marketTradingMode, setMarketTradingMode] = useState<MarketTradingMode>('all');
     const [marketOpen, setMarketOpen] = useState(false);
-    const [entryMode, setEntryMode]   = useState(false);
+    const [entryMode, setEntryMode]   = useState(true);
     const [powerEngineEnabled, setPowerEngineEnabled] = useState(false);
     const [lastSignalConfidence, setLastSignalConfidence] = useState<number | null>(null);
     // AI strategy engine — 'dual' keeps the original Over 5 / Under 4 pair,
@@ -958,7 +958,49 @@ const OverUnderEngine: React.FC = observer(() => {
     // Keep fireRoundRef in sync so passiveSub's closure always calls the latest version
     useEffect(() => { fireRoundRef.current = fireRound; }, [fireRound]);
 
+    // Every card starts from the same defaults so settings, results and status
+    // from one card never carry over to another.
+    const resetCardSettings = useCallback(() => {
+        if (!onlyUpsDownsRunning) {
+            setOnlyUpsDownsStake('2');
+            setOnlyUpsDownsDuration('2');
+            setOnlyUpsDownsBulkEnabled(false);
+            setOnlyUpsDownsBulkCount('3');
+            setOnlyUpsDownsTakeProfit('5');
+            setOnlyUpsDownsStopLoss('5');
+            setOnlyUpsDownsStatus('Ready to buy');
+        }
+        setStake('0.5');
+        setTradeDuration('1');
+        setMartingale('1');
+        setMartingaleEnabled(false);
+        setTakeProfit('5');
+        setStopLoss('5');
+        setBulkEnabled(false);
+        setBulkCount('3');
+        setMarketTradingMode('all');
+        setEntryMode(true);
+        setPowerEngineEnabled(false);
+        setLastSignalConfidence(null);
+        setTotalProfit(0);
+        setOverWins(0); setOverLosses(0);
+        setUnderWins(0); setUnderLosses(0);
+        setOverCurrentStake(0.5);
+        setUnderCurrentStake(0.5);
+        setLastOverResult(null);
+        setLastUnderResult(null);
+        setSingleWins(0);
+        setSingleLosses(0);
+        setSingleStake(0.5);
+        setLastSingleResult(null);
+        setLastSkipReason(null);
+        setLastEntryDigit(null);
+        setIsWaitingEntry(false);
+        setStatusMsg('Ready to trade');
+    }, [onlyUpsDownsRunning]);
+
     const selectStrategy = useCallback((nextStrategy: StrategyId) => {
+        if (!eng.current.running) resetCardSettings();
         setStrategyId(nextStrategy);
         setStrategySelected(true);
         const e = eng.current;
@@ -982,15 +1024,16 @@ const OverUnderEngine: React.FC = observer(() => {
                     : `⚡ Switched to ${nextStrategy === 'dual' ? 'Dual Over 5 / Under 4' : STRATEGY_DEFINITIONS[nextStrategy].label}`
             );
         }
-    }, [powerEngineEnabled]);
+    }, [powerEngineEnabled, resetCardSettings]);
 
     const goBackToStrategies = useCallback(() => {
         if (eng.current.running) stopEngine('Strategy selection reopened');
+        resetCardSettings();
         setHigherLowerSelected(false);
         setOnlyUpsDownsSelected(false);
         setMarketOpen(false);
         setStrategySelected(false);
-    }, [stopEngine]);
+    }, [stopEngine, resetCardSettings]);
 
     // ── settle ────────────────────────────────────────────────────────────────
 
@@ -2056,7 +2099,7 @@ const OverUnderEngine: React.FC = observer(() => {
 
                 <div className='oue__digit-legend'>
                     <span className='oue__legend-dot oue__legend-dot--over'/>Over 5 (6–9)
-                    {entryMode && <><span className='oue__legend-dot oue__legend-dot--entry'/>Entry (4–5)</>}
+                    {entryMode && strategyId === 'dual' && <><span className='oue__legend-dot oue__legend-dot--entry'/>Entry (4–5)</>}
                     <span className='oue__legend-dot oue__legend-dot--neutral'/>Neutral
                     <span className='oue__legend-dot oue__legend-dot--under'/>Under 4 (0–3)
                 </div>

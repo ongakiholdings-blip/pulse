@@ -687,14 +687,14 @@ const MatchesHub = () => {
                         <h2>Live contracts</h2>
                         <button
                             className='matches-hub__reset-button'
-                            disabled={!contracts.some(item => item.status !== 'OPEN')}
-                            onClick={() => setContracts(current => current.filter(item => item.status === 'OPEN'))}
+                            disabled={contracts.length === 0}
+                            onClick={() => setContracts([])}
                             type='button'
                         >
-                            Reset history
+                            Reset
                         </button>
                     </div>
-                    <p>Open positions update from the shared Deriv WebSocket. Reset clears settled contracts; open ones stay until they settle.</p>
+                    <p>Open positions update from the shared Deriv WebSocket. Reset clears the contract history.</p>
                     <div className='matches-hub__contract-columns'>
                         <div>
                             <strong>OPEN</strong>
