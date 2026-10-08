@@ -263,12 +263,12 @@ export function matchesStrategyEntrySequence(id: StrategyId, recentDigits: numbe
         case 'under7':
             return prev > 7 && current > 7;
         case 'even': {
-            if (recentDigits.length < 5) return false;
-            return recentDigits.slice(-5).every(d => d % 2 === 1);
+            if (recentDigits.length < 3) return false;
+            return recentDigits.slice(-3).every(d => d % 2 === 1);
         }
         case 'odd': {
-            if (recentDigits.length < 5) return false;
-            return recentDigits.slice(-5).every(d => d % 2 === 0);
+            if (recentDigits.length < 3) return false;
+            return recentDigits.slice(-3).every(d => d % 2 === 0);
         }
         default:
             return false;

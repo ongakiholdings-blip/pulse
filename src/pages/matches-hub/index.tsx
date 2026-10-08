@@ -5,7 +5,6 @@ import { useApiBase } from '@/hooks/useApiBase';
 import { useStore } from '@/hooks/useStore';
 import { contract_stages } from '@/constants/contract-stage';
 import { type MarketScan, scanMarkets as runMarketScan, scoreDigits } from './digit-scanner';
-import { getTradingLimitReason } from './trading-limits';
 import './matches-hub.scss';
 
 const DIGITS = Array.from({ length: 10 }, (_, digit) => digit);
@@ -76,8 +75,6 @@ const MatchesHub = () => {
     const [aiEnabled, setAiEnabled] = useState(true);
     const [candidateCount, setCandidateCount] = useState(1);
     const [stake, setStake] = useState('1');
-    const [stopLoss, setStopLoss] = useState('10');
-    const [takeProfit, setTakeProfit] = useState('10');
     const [sessionProfit, setSessionProfit] = useState(0);
     const [selectedDigits, setSelectedDigits] = useState<number[]>([]);
     const [currentTick, setCurrentTick] = useState('--');
@@ -343,20 +340,14 @@ const MatchesHub = () => {
             return;
         }
         const duration = Number(durationTicks);
-        const lossLimit = Number(stopLoss);
-        const profitLimit = Number(takeProfit);
         if (
             tradeDigits.length === 0 ||
             !Number.isFinite(amount) ||
             amount < 0.35 ||
             !Number.isInteger(duration) ||
-            duration < 1 ||
-            !Number.isFinite(lossLimit) ||
-            lossLimit <= 0 ||
-            !Number.isFinite(profitLimit) ||
-            profitLimit <= 0
+            duration < 1
         ) {
-            setStatus('Choose at least one digit and enter a valid stake, duration, stop loss, and take profit.');
+            setStatus('Choose at least one digit and enter a valid stake and duration.');
             return;
         }
         if (run_panel.is_running || autoRunActive.current) return;
@@ -367,8 +358,6 @@ const MatchesHub = () => {
             digits: [...tradeDigits],
             contractType,
             symbol,
-            lossLimit,
-            profitLimit,
         };
         autoRunActive.current = true;
         setIsAutoRunning(true);
@@ -451,15 +440,8 @@ const MatchesHub = () => {
                 realizedProfit += settledProfits.reduce((total, profit) => total + profit, 0);
                 setSessionProfit(realizedProfit);
 
-                const limitReason = getTradingLimitReason(realizedProfit, runConfig.lossLimit, runConfig.profitLimit);
-                if (limitReason) {
-                    autoRunActive.current = false;
-                    setStatus(
-                        `${limitReason === 'take-profit' ? 'Take profit' : 'Stop loss'} reached at ${realizedProfit.toFixed(2)} ${currency}. No more contracts will be opened.`
-                    );
-                } else if (!autoRunActive.current) {
-                    setStatus(`Run stopped after open contracts settled. Session P/L: ${realizedProfit.toFixed(2)} ${currency}.`);
-                }
+                autoRunActive.current = false;
+                setStatus(`Trade settled. P/L: ${realizedProfit.toFixed(2)} ${currency}.`);
             }
         } catch (error) {
             console.error('[MatchesHub] Trade failed:', error);
@@ -551,7 +533,7 @@ const MatchesHub = () => {
                 <section className='matches-hub__trade-card'>
                     <div className='matches-hub__section-heading'>
                         <h2>Digit trade dock</h2>
-                        <p>Review {market} tick history, then run your selection until the realized stop-loss or take-profit limit is reached.</p>
+                        <p>Review {market} tick history, then run your selection to place one trade.</p>
                     </div>
                     <fieldset className='matches-hub__run-config' disabled={isAutoRunning}>
                     <div className='matches-hub__segmented'>
@@ -671,12 +653,8 @@ const MatchesHub = () => {
                         <label>Stake ({currency})<input min='0.35' step='0.01' type='number' value={stake} onChange={event => setStake(event.target.value)} /></label>
                         <label>Duration (ticks)<input min='1' max='5000' type='number' value={durationTicks} onChange={event => setDurationTicks(event.target.value)} /></label>
                     </div>
-                    <div className='matches-hub__inputs matches-hub__limits'>
-                        <label>Stop loss ({currency})<input aria-label={`Stop loss in ${currency}`} min='0.01' step='0.01' type='number' value={stopLoss} onChange={event => setStopLoss(event.target.value)} /></label>
-                        <label>Take profit ({currency})<input aria-label={`Take profit in ${currency}`} min='0.01' step='0.01' type='number' value={takeProfit} onChange={event => setTakeProfit(event.target.value)} /></label>
-                    </div>
                     </fieldset>
-                    <p className='matches-hub__limit-note'>Limits use realized session P/L and are checked after each selected-digit batch settles. Stop Run prevents another batch; open contracts settle normally.</p>
+                    <p className='matches-hub__limit-note'>Each run places one trade for the selected digit and ends once it settles.</p>
                     <p className='matches-hub__session-profit' aria-live='polite'>Session realized P/L: {sessionProfit.toFixed(2)} {currency}</p>
                     <button
                         className='matches-hub__trade-button'

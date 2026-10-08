@@ -35,11 +35,17 @@ function isAlternatingMiddlePair(first: number | undefined, second: number | und
     return (first === 4 && second === 5) || (first === 5 && second === 4);
 }
 
-function hasPowerEntrySequence(digits: number[]): boolean {
-    if (digits.length < 3) return false;
-    const lastThree = digits.slice(-3);
-    return lastThree.every(digit => digit < 4) || lastThree.every(digit => digit > 5);
+function hasPowerEntrySequence(digits: number[], strategyId: StrategyId = 'dual'): boolean {
+    const length = strategyId === 'dual' ? 3 : 4;
+    if (digits.length < length) return false;
+    const lastDigits = digits.slice(-length);
+    if (strategyId === 'over1') return lastDigits.every(digit => digit < 5);
+    if (strategyId === 'under8') return lastDigits.every(digit => digit > 4);
+    return lastDigits.every(digit => digit < 5) || lastDigits.every(digit => digit > 4);
 }
+
+// Over 1 / Under 8 only exist on their own card, so they share the Entry Engine toggle with Over 5 / Under 4.
+const usesEntryEngine = (id: StrategyId) => id === 'dual' || id === 'over1' || id === 'under8';
 
 export interface Market { symbol: string; label: string; short: string; code: string; }
 
@@ -319,7 +325,8 @@ const OverUnderEngine: React.FC = observer(() => {
     const [marketTradingMode, setMarketTradingMode] = useState<MarketTradingMode>('all');
     const [marketOpen, setMarketOpen] = useState(false);
     const [entryMode, setEntryMode]   = useState(true);
-    const [powerEngineEnabled, setPowerEngineEnabled] = useState(false);
+    const [entryEngineEnabled, setEntryEngineEnabled] = useState(false);
+    const [sideSelectorActive, setSideSelectorActive] = useState(false);
     const [lastSignalConfidence, setLastSignalConfidence] = useState<number | null>(null);
     // AI strategy engine — 'dual' keeps the original Over 5 / Under 4 pair,
     // any other value runs a single-leg strategy using the recommendations
@@ -980,7 +987,7 @@ const OverUnderEngine: React.FC = observer(() => {
         setBulkCount('3');
         setMarketTradingMode('all');
         setEntryMode(true);
-        setPowerEngineEnabled(false);
+        setEntryEngineEnabled(false);
         setLastSignalConfidence(null);
         setTotalProfit(0);
         setOverWins(0); setOverLosses(0);
@@ -1007,10 +1014,9 @@ const OverUnderEngine: React.FC = observer(() => {
         e.strategyId = nextStrategy;
         e.entryDigit = null;
         setLastEntryDigit(null);
-        // Hidden power-engine trigger only ever applies to the Over 5 / Under 4
-        // card — recompute it here too, in case the strategy is switched live
-        // while the engine is already running.
-        const usePowerEngineNow = nextStrategy === 'dual' && powerEngineEnabled;
+        // The three-digit trigger only applies to the Over 5 / Under 4 card —
+        // recompute it here in case the strategy is switched live.
+        const usePowerEngineNow = usesEntryEngine(nextStrategy) && entryEngineEnabled;
         e.powerEngineActive = usePowerEngineNow;
         e.powerAwaitingTrigger = usePowerEngineNow;
         e.dualEntryPending = false;
@@ -1018,17 +1024,19 @@ const OverUnderEngine: React.FC = observer(() => {
             e.waitingForEntry = e.useEntryMode && !usePowerEngineNow;
             setIsWaitingEntry(e.useEntryMode && !usePowerEngineNow);
             setLastSkipReason(null);
+            const strategyLabel = usePowerEngineNow ? 'Dual Over 5 / Under 4' : STRATEGY_DEFINITIONS[nextStrategy as Exclude<StrategyId, 'dual' | 'confidence'>]?.label ?? 'Confidence Gate';
             setStatusMsg(
                 e.useEntryMode && !usePowerEngineNow
-                    ? `👀 Switched to ${nextStrategy === 'dual' ? 'Dual Over 5 / Under 4' : STRATEGY_DEFINITIONS[nextStrategy].label} — waiting for a fresh entry trigger…`
-                    : `⚡ Switched to ${nextStrategy === 'dual' ? 'Dual Over 5 / Under 4' : STRATEGY_DEFINITIONS[nextStrategy].label}`
+                    ? `👀 Switched to ${strategyLabel} — waiting for a fresh entry trigger…`
+                    : `⚡ Switched to ${strategyLabel}`
             );
         }
-    }, [powerEngineEnabled, resetCardSettings]);
+    }, [entryEngineEnabled, resetCardSettings]);
 
     const goBackToStrategies = useCallback(() => {
         if (eng.current.running) stopEngine('Strategy selection reopened');
         resetCardSettings();
+        setSideSelectorActive(false);
         setHigherLowerSelected(false);
         setOnlyUpsDownsSelected(false);
         setMarketOpen(false);
@@ -1214,15 +1222,15 @@ const OverUnderEngine: React.FC = observer(() => {
                 const nextWindow = [...digitWindowRef.current, d].slice(-DIGIT_WINDOW);
                 digitWindowRef.current = nextWindow;
 
-                // The power engine trades after three consecutive digits in
-                // either extreme group: 0–3 or 6–9.
+                // The dual Over 5 / Under 4 card trades when the last three digits
+                // are all below 5 or all above 4.
                 if (eng.current.running && eng.current.powerEngineActive) {
-                    if (!eng.current.roundInFlight && hasPowerEntrySequence(nextWindow)) {
+                    if (!eng.current.roundInFlight && hasPowerEntrySequence(nextWindow, eng.current.strategyId)) {
                         eng.current.powerAwaitingTrigger = false;
                         eng.current.entryDigit = d;
                         setLastEntryDigit(d);
                         setLastSkipReason(null);
-                        setStatusMsg(`⚡ Three consecutive ${d < 4 ? 'under 4' : 'over 5'} digits detected — opening trade…`);
+                        setStatusMsg('⚡ Entry Engine triggered — opening trade…');
                         fireRoundRef.current();
                     }
                     return;
@@ -1267,9 +1275,9 @@ const OverUnderEngine: React.FC = observer(() => {
                                             : eng.current.strategyId === 'under7'
                                                 ? `Waiting for Under 7 entry: last 2 digits both above 7 (8 or 9) — got ${d}`
                                                 : eng.current.strategyId === 'even'
-                                                    ? `Waiting for Even entry: last 5 digits all odd — got ${d}`
+                                                    ? `Waiting for Even entry: last 3 digits all odd — got ${d}`
                                                     : eng.current.strategyId === 'odd'
-                                                        ? `Waiting for Odd entry: last 5 digits all even — got ${d}`
+                                                        ? `Waiting for Odd entry: last 3 digits all even — got ${d}`
                                                         : `Waiting for ${selectedStrategy.label} entry trigger — got ${d}`
                             );
                         }
@@ -1478,16 +1486,17 @@ const OverUnderEngine: React.FC = observer(() => {
         }
 
         const resolvedStrategy = strategyId === 'dual' || strategyId === 'confidence' ? null : STRATEGY_DEFINITIONS[strategyId];
-        // Hidden power-engine trigger: Over 5 / Under 4 card only. When active,
-        // it replaces the visible entry-mode logic for this run — 4→5 or 5→4
-        // arms the trade, which executes on the following digit.
-        const usePowerEngine = strategyId === 'dual' && powerEngineEnabled;
+        // Over 5 / Under 4 card: the Entry Engine toggle turns on the entry rule
+        // (last three digits all below 5 or all above 4). It replaces the old
+        // entry mode on this card; when off, rounds fire without an entry rule.
+        const usePowerEngine = usesEntryEngine(strategyId) && entryEngineEnabled;
+        const entryModeActive = usesEntryEngine(strategyId) ? false : entryMode;
         // Risk controls always come from the values entered in the active form.
         // Strategy recommendations are informational and must not replace them.
-        eng.current = makeInitState(stakeValue, martingaleValue, takeProfitValue, stopLossValue, entryMode, strategyId, martingaleEnabled);
+        eng.current = makeInitState(stakeValue, martingaleValue, takeProfitValue, stopLossValue, entryModeActive, strategyId, martingaleEnabled);
         eng.current.running = true;
-        eng.current.useEntryMode = entryMode;
-        eng.current.waitingForEntry = entryMode;
+        eng.current.useEntryMode = entryModeActive;
+        eng.current.waitingForEntry = entryModeActive;
         eng.current.powerEngineActive = usePowerEngine;
         eng.current.powerAwaitingTrigger = usePowerEngine;
         eng.current.dualEntryPending = false;
@@ -1511,7 +1520,7 @@ const OverUnderEngine: React.FC = observer(() => {
         setLastOverResult(null);
         setLastUnderResult(null);
         setLastEntryDigit(null);
-        setIsWaitingEntry(entryMode && !usePowerEngine);
+        setIsWaitingEntry(entryModeActive && !usePowerEngine);
         const statusStart = resolvedStrategy
             ? (strategyId === 'over1'
                 ? '👀 Watching for 3 consecutive digits in the 0–2 bracket (any random order)…'
@@ -1522,13 +1531,13 @@ const OverUnderEngine: React.FC = observer(() => {
                         : strategyId === 'under7'
                             ? '👀 Watching for Under 7 entry: last 2 digits both above 7…'
                                 : strategyId === 'even'
-                                    ? '👀 Watching for Even entry: last 5 digits all odd…'
+                                    ? '👀 Watching for Even entry: last 3 digits all odd…'
                                     : strategyId === 'odd'
-                                        ? '👀 Watching for Odd entry: last 5 digits all even…'
+                                        ? '👀 Watching for Odd entry: last 3 digits all even…'
                                         : `👀 Watching for ${resolvedStrategy.label} trigger ${getStrategyEntryDigits(strategyId).join(', ')}…`)
             : usePowerEngine
                 ? 'Connecting…'
-                : entryMode
+                : entryModeActive
                     ? '👀 Dual entry window: block if 4/5 >6 in 20 or >=3 in 5; trade only when 4/5 appears once in 5…'
                     : 'Connecting…';
         setStatusMsg(statusStart);
@@ -1559,7 +1568,7 @@ const OverUnderEngine: React.FC = observer(() => {
         });
 
         try {
-            if (!entryMode && !usePowerEngine) {
+            if (!entryModeActive && !usePowerEngine) {
                 setStatusMsg('Connected — firing first round…');
                 await fireRound();
             }
@@ -1574,7 +1583,7 @@ const OverUnderEngine: React.FC = observer(() => {
         } catch (err: any) {
             stopEngine(`⚠ ${err?.error?.message || err?.message || 'Failed to start'}`);
         }
-    }, [stakeValue, martingaleValue, martingaleEnabled, takeProfitValue, stopLossValue, entryMode, strategyId, powerEngineEnabled, bulkEnabled, bulkCount, fireRound, marketTradingMode, onSettled, startPassiveSub, stopEngine, symbol, transactions, run_panel, summary_card, ui]);
+    }, [stakeValue, martingaleValue, martingaleEnabled, takeProfitValue, stopLossValue, entryMode, strategyId, entryEngineEnabled, bulkEnabled, bulkCount, fireRound, marketTradingMode, onSettled, startPassiveSub, stopEngine, symbol, transactions, run_panel, summary_card, ui]);
 
     // Start passive ticks whenever the selected symbol changes (or on first
     // mount). The engine can render before authentication finishes, so retry
@@ -1717,11 +1726,26 @@ const OverUnderEngine: React.FC = observer(() => {
                             </span>
                             <span className='oue__strategy-card-action'>OPEN</span>
                         </button>
+                        <button
+                            type='button'
+                            role='listitem'
+                            className='oue__strategy-card'
+                            aria-label='Open Over 1 or Under 8 workspace'
+                            onClick={() => { selectStrategy('over1'); setSideSelectorActive(true); }}
+                        >
+                            <span className='oue__strategy-card-badge'>↕</span>
+                            <span className='oue__strategy-card-content'>
+                                <span className='oue__strategy-card-title'>OVER 1 / UNDER 8</span>
+                                <span className='oue__strategy-card-meta'>OVER 1 OR UNDER 8 · CHOOSE ONE</span>
+                                <span className='oue__strategy-card-description'>Pick Over 1 or Under 8 and trade that single contract, with live digit frequency percentages.</span>
+                            </span>
+                            <span className='oue__strategy-card-action'>OPEN</span>
+                        </button>
                         {([
                             { id: 'over2', badge: '↑', title: 'OVER 2', meta: 'DIGIT 3–9 · 70% WIN', description: 'Trades Over 2 when the last 2 digits are both below 2, with live digit frequency percentages.' },
                             { id: 'under7', badge: '↓', title: 'UNDER 7', meta: 'DIGIT 0–6 · 70% WIN', description: 'Trades Under 7 when the last 2 digits are both above 7, with live digit frequency percentages.' },
-                            { id: 'even', badge: '2', title: 'EVEN', meta: 'DIGIT 0,2,4,6,8 · 50% WIN', description: 'Trades Even when the last 5 digits are all odd, with live digit frequency percentages.' },
-                            { id: 'odd', badge: '1', title: 'ODD', meta: 'DIGIT 1,3,5,7,9 · 50% WIN', description: 'Trades Odd when the last 5 digits are all even, with live digit frequency percentages.' },
+                            { id: 'even', badge: '2', title: 'EVEN', meta: 'DIGIT 0,2,4,6,8 · 50% WIN', description: 'Trades Even when the last 3 digits are all odd, with live digit frequency percentages.' },
+                            { id: 'odd', badge: '1', title: 'ODD', meta: 'DIGIT 1,3,5,7,9 · 50% WIN', description: 'Trades Odd when the last 3 digits are all even, with live digit frequency percentages.' },
                         ] as const).map(card => (
                             <button
                                 key={card.id}
@@ -1956,25 +1980,21 @@ const OverUnderEngine: React.FC = observer(() => {
                 <div className='oue__header'>
                 <div className='oue__title'>
                     <span className='oue__title-icon'>🤖</span>
-                    <span>{isSingleStrategyMode ? `${activeStrategyDef?.label.toUpperCase()} AI BOT` : strategyId === 'confidence' ? 'CONFIDENCE GATE AI BOT' : 'AI BOTS'}</span>
+                    <span>{isSingleStrategyMode ? `${sideSelectorActive ? 'OVER 1 / UNDER 8' : activeStrategyDef?.label.toUpperCase()} AI BOT` : strategyId === 'confidence' ? 'CONFIDENCE GATE AI BOT' : 'AI BOTS'}</span>
 
                     {/* entry-mode indicator badge */}
-                    {entryMode && (
+                    {entryMode && !usesEntryEngine(strategyId) && (
                         <span className='oue__entry-badge'>
                             {isSingleStrategyMode
-                                ? strategyId === 'over1'
-                                    ? <>Entry: <strong>3 consecutive digits in 0–2 bracket</strong></>
-                                    : strategyId === 'over2'
-                                        ? <>Entry: <strong>last 2 digits &lt; 2</strong></>
-                                        : strategyId === 'under8'
-                                            ? <>Entry: <strong>7–9, 7–9, 7–9 → 3–7</strong></>
-                                            : strategyId === 'under7'
-                                                ? <>Entry: <strong>last 2 digits &gt; 7</strong></>
-                                                        : strategyId === 'even'
-                                                            ? <>Entry: <strong>last 5 digits all odd</strong></>
-                                                            : strategyId === 'odd'
-                                                                ? <>Entry: <strong>last 5 digits all even</strong></>
-                                                                : <>Entry: <strong>{getStrategyEntryDigits(strategyId).join(', ')}</strong></>
+                                ? strategyId === 'over2'
+                                    ? <>Entry: <strong>last 2 digits &lt; 2</strong></>
+                                    : strategyId === 'under7'
+                                        ? <>Entry: <strong>last 2 digits &gt; 7</strong></>
+                                        : strategyId === 'even'
+                                            ? <>Entry: <strong>last 3 digits all odd</strong></>
+                                            : strategyId === 'odd'
+                                                ? <>Entry: <strong>last 3 digits all even</strong></>
+                                                : <>Entry: <strong>{getStrategyEntryDigits(strategyId).join(', ')}</strong></>
                                 : <>Entry: <strong>4</strong> or <strong>5</strong></>}
                             {isWaitingEntry && <span className='oue__entry-pulse' />}
                         </span>
@@ -2099,7 +2119,6 @@ const OverUnderEngine: React.FC = observer(() => {
 
                 <div className='oue__digit-legend'>
                     <span className='oue__legend-dot oue__legend-dot--over'/>Over 5 (6–9)
-                    {entryMode && strategyId === 'dual' && <><span className='oue__legend-dot oue__legend-dot--entry'/>Entry (4–5)</>}
                     <span className='oue__legend-dot oue__legend-dot--neutral'/>Neutral
                     <span className='oue__legend-dot oue__legend-dot--under'/>Under 4 (0–3)
                 </div>
@@ -2123,9 +2142,9 @@ const OverUnderEngine: React.FC = observer(() => {
                                         : strategyId === 'under7'
                                             ? <>Watching for <strong>2 consecutive digits above 7 (8 or 9)</strong> before the next Under 7 trade…</>
                                                 : strategyId === 'even'
-                                                    ? <>Watching for <strong>5 consecutive odd digits</strong> before the next Even trade…</>
+                                                    ? <>Watching for <strong>3 consecutive odd digits</strong> before the next Even trade…</>
                                                     : strategyId === 'odd'
-                                                        ? <>Watching for <strong>5 consecutive even digits</strong> before the next Odd trade…</>
+                                                        ? <>Watching for <strong>3 consecutive even digits</strong> before the next Odd trade…</>
                                                         : `Watching for ${activeStrategyDef?.label} trigger digit${getStrategyEntryDigits(strategyId).length > 1 ? 's' : ''} ${getStrategyEntryDigits(strategyId).join(', ')}…`
                             : <>Watching for <strong>4 → 5</strong> or <strong>5 → 4</strong>, then trading on the next digit…</>}
                         {lastEntryDigit !== null && (
@@ -2145,6 +2164,22 @@ const OverUnderEngine: React.FC = observer(() => {
                         {strategyId === 'dual' ? 'Dual Over/Under' : STRATEGY_DEFINITIONS[strategyId].label}
                     </span>
                 </div>
+                {sideSelectorActive && (
+                    <div className='oue__higher-lower-sides' role='group' aria-label='Contract selection'>
+                        {(['over1', 'under8'] as const).map(side => (
+                            <button
+                                key={side}
+                                type='button'
+                                className={strategyId === side ? 'oue__higher-lower-side oue__higher-lower-side--active' : 'oue__higher-lower-side'}
+                                aria-pressed={strategyId === side}
+                                disabled={isRunning}
+                                onClick={() => { if (!isRunning && strategyId !== side) selectStrategy(side); }}
+                            >
+                                {side === 'over1' ? 'Over 1' : 'Under 8'}
+                            </button>
+                        ))}
+                    </div>
+                )}
                 {strategyId !== 'dual' && (
                     <div className='oue__single-stats'>
                         <span>Wins: <strong>{singleWins}</strong></span>
@@ -2428,19 +2463,18 @@ const OverUnderEngine: React.FC = observer(() => {
 
                 <label className='oue__entry-toggle'>
                     <span className='oue__entry-toggle-label'>
-                        Entry Point Power Engine
-                        <small className='oue__entry-toggle-hint'>Enable advanced entry-point controls</small>
+                        Entry Engine
                     </span>
                     <div
-                        className={`oue__toggle${powerEngineEnabled ? ' oue__toggle--on' : ''}`}
-                        onClick={() => !isRunning && setPowerEngineEnabled(value => !value)}
+                        className={`oue__toggle${entryEngineEnabled ? ' oue__toggle--on' : ''}`}
+                        onClick={() => !isRunning && setEntryEngineEnabled(value => !value)}
                         role='switch'
-                        aria-checked={powerEngineEnabled}
+                        aria-checked={entryEngineEnabled}
                         aria-disabled={isRunning}
                         tabIndex={0}
                         onKeyDown={e => {
                             if (!isRunning && (e.key === ' ' || e.key === 'Enter')) {
-                                setPowerEngineEnabled(value => !value);
+                                setEntryEngineEnabled(value => !value);
                             }
                         }}
                     >

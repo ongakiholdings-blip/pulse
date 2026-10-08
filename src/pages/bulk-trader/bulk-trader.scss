@@ -1,6 +1,14 @@
 .bulk-trader {
+    box-sizing: border-box;
+    height: calc(100vh - 7rem);
+    max-height: calc(100vh - 7rem);
     min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
     padding: clamp(1rem, 2vw, 2rem);
+    padding-bottom: 8rem;
     background:
         linear-gradient(145deg, rgb(5 20 40 / 88%), rgb(3 10 24 / 96%)),
         url('../../assets/green-abstract-gradient-background.jpg') center / cover no-repeat;
@@ -163,9 +171,13 @@
 
     &__digits {
         display: grid;
-        grid-template-columns: repeat(10, 1fr);
-        gap: clamp(0.45rem, 1.8vw, 1.25rem);
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: clamp(0.6rem, 2vw, 1.5rem) clamp(0.4rem, 1.8vw, 1.25rem);
         align-items: start;
+        justify-items: center;
+        width: 100%;
+        max-width: 42rem;
+        margin: 0 auto;
     }
 
     &__digit {
@@ -180,8 +192,8 @@
 
         span {
             display: grid;
-            width: clamp(3.2rem, 6vw, 5.2rem);
-            height: clamp(3.2rem, 6vw, 5.2rem);
+            width: clamp(3rem, 8vw, 5.2rem);
+            height: clamp(3rem, 8vw, 5.2rem);
             place-items: center;
             border: 2px solid transparent;
             border-radius: 50%;
@@ -234,6 +246,7 @@
     &__history {
         display: flex;
         justify-content: center;
+        flex-wrap: wrap;
         gap: 0.25rem;
         margin-top: 0.8rem;
 
@@ -336,13 +349,17 @@
         text-align: center;
     }
 
+    @media (max-width: 1024px) {
+        &__settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
     @media (max-width: 700px) {
-        padding: 1rem;
+        padding: 1rem 1rem 8rem;
         &__top-grid,
         &__settings { grid-template-columns: 1fr; }
         &__hint { text-align: left; }
-        &__digits { gap: 0.1rem; }
-        &__digit span { width: 2.8rem; height: 2.8rem; }
+        &__digits { gap: 0.6rem 0.25rem; }
+        &__digit span { width: clamp(2.6rem, 13vw, 3.4rem); height: clamp(2.6rem, 13vw, 3.4rem); font-size: 1.15rem; }
         &__digit small { font-size: 0.65rem; }
         &__auto-widget { top: 4.5rem; right: 1rem; }
         &__auto-widget-grid { grid-template-columns: 1fr; }

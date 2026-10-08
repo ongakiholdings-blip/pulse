@@ -111,13 +111,7 @@
         font-size: 0.92rem;
         font-weight: 700;
     }
-    &__limits {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        width: min(100%, 27rem);
-        background: linear-gradient(135deg, rgb(5 39 34 / 70%), rgb(3 23 24 / 85%));
-    }
     &__run-config { min-width: 0; margin: 0; padding: 0; border: 0; }
-    &__limits label, &__limits label:last-child { width: auto; flex: 1; }
     &__limit-note, &__session-profit { margin: 0.4rem 0; color: #d1fae5; font-size: 0.72rem; line-height: 1.4; }
     &__session-profit { font-size: 0.86rem; font-weight: 800; }
     &__pick-label { margin: 0.65rem 0 0.35rem; color: #334b69; font-size: 0.78rem; font-weight: 700; text-align: center; }
