@@ -5,6 +5,7 @@ import { save_types } from '@/external/bot-skeleton/constants/save-type';
 import { useStore } from '@/hooks/useStore';
 import { DBOT_TABS } from '@/constants/bot-contents';
 import { Localize } from '@deriv-com/translations';
+import OverUnderEngine from '@/components/over-under-engine';
 import './free-bots.scss';
 
 const BookmarkIcon = () => (
@@ -19,15 +20,16 @@ const LoadBotIcon = () => (
     </svg>
 );
 
-type MiniTab = 'POPULAR' | 'NORMAL' | 'PREMIUM' | 'CLASSICS' | 'BOT STORE';
+type MiniTab = 'POPULAR' | 'NORMAL' | 'PREMIUM' | 'CLASSICS' | 'AI BOTS' | 'BOT STORE';
 
-const MINI_TABS: MiniTab[] = ['POPULAR', 'NORMAL', 'PREMIUM', 'CLASSICS', 'BOT STORE'];
+const MINI_TABS: MiniTab[] = ['POPULAR', 'NORMAL', 'PREMIUM', 'CLASSICS', 'AI BOTS', 'BOT STORE'];
 
 const TAB_LABELS: Record<MiniTab, string> = {
     POPULAR: 'POPULAR',
     NORMAL: 'NORMAL',
     PREMIUM: 'PREMIUM',
     CLASSICS: 'CLASSICS',
+    'AI BOTS': 'AI BOTS',
     'BOT STORE': 'BOT STORE',
 };
 
@@ -47,6 +49,10 @@ const TAB_CONFIG: Record<MiniTab, { badge: string; cardBorder: string }> = {
     CLASSICS: {
         badge: '🏛️',
         cardBorder: 'linear-gradient(135deg, #cd7f32 0%, #8b4513 50%, #cd7f32 100%)',
+    },
+    'AI BOTS': {
+        badge: '🤖',
+        cardBorder: 'linear-gradient(135deg, #34d399 0%, #0f766e 50%, #34d399 100%)',
     },
     'BOT STORE': {
         badge: '🛒',
@@ -260,7 +266,9 @@ const FreeBots = observer(() => {
     const { dashboard } = useStore();
     const { setActiveTab: setDashboardTab } = dashboard;
     const [importing, setImporting] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<MiniTab>('NORMAL');
+    const [activeTab, setActiveTab] = useState<MiniTab>(() =>
+        window.location.hash === '#over_under_engine' ? 'AI BOTS' : 'NORMAL'
+    );
 
     const handleImport = async (bot: BotEntry) => {
         setImporting(bot.id);
@@ -309,7 +317,7 @@ const FreeBots = observer(() => {
     const visible_bots =
         activeTab === 'POPULAR'
             ? FREE_BOTS.filter(bot => POPULAR_BOT_IDS.has(bot.id))
-            : activeTab === 'BOT STORE'
+            : activeTab === 'BOT STORE' || activeTab === 'AI BOTS'
                 ? []
             : FREE_BOTS.filter(bot => bot.tab === activeTab);
 
@@ -329,7 +337,9 @@ const FreeBots = observer(() => {
                 ))}
             </div>
 
-            {visible_bots.length > 0 ? (
+            {activeTab === 'AI BOTS' ? (
+                <OverUnderEngine />
+            ) : visible_bots.length > 0 ? (
                 <div className='free-bots__grid'>
                     {visible_bots.map(bot => {
                         const is_loading = importing === bot.id;

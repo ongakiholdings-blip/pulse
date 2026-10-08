@@ -38,7 +38,6 @@ import {
     LabelPairedCircleStarCaptionBoldIcon,
     LabelPairedMagnifyingGlassPlusCaptionRegularIcon,
     LabelPairedCopyCaptionRegularIcon,
-    LabelPairedArrowUpArrowDownCaptionBoldIcon,
 } from '@deriv/quill-icons/LabelPaired';
 import { LegacyGuide1pxIcon, LegacyHomeNewIcon } from '@deriv/quill-icons/Legacy';
 import { Localize, localize } from '@deriv-com/translations';
@@ -48,7 +47,6 @@ import ChartModal from '../chart/chart-modal';
 import Dashboard from '../dashboard';
 import RunStrategy from '../dashboard/run-strategy';
 import FreeBots from '../free-bots';
-import OverUnderEngine from '@/components/over-under-engine';
 import BulkTrader from '@/pages/bulk-trader';
 import Scanner from '@/pages/scanner';
 import MatchesHub from '@/pages/matches-hub';
@@ -100,7 +98,6 @@ const AppWrapper = observer(() => {
         'bot_builder',
         'free_bots',
         'bulk_trader',
-        'over_under_engine',
         'signal_zone',
         'scanner',
         'matches_hub',
@@ -157,6 +154,7 @@ const AppWrapper = observer(() => {
     const GetHashedValue = (tab: number) => {
         tab_value = location.hash?.split('#')[1];
         if (!tab_value) return is_preview_mode ? BOT_BUILDER : DBOT_TABS.DERIV_HOMES;
+        if (tab_value === 'over_under_engine') return DBOT_TABS.FREE_BOTS;
         const hashed_tab_index = hash.indexOf(String(tab_value));
         return hashed_tab_index >= 0 ? hashed_tab_index : is_preview_mode ? BOT_BUILDER : DBOT_TABS.DERIV_HOMES;
     };
@@ -521,21 +519,6 @@ const AppWrapper = observer(() => {
                                 id='id-bulk-trader'
                             >
                                 <BulkTrader />
-                            </div>
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedArrowUpArrowDownCaptionBoldIcon
-                                            height='24px'
-                                            width='24px'
-                                            fill='var(--text-general)'
-                                        />
-                                        <Localize i18n_default_text='AI BOTS' />
-                                    </>
-                                }
-                                id='id-over-under-engine'
-                            >
-                                <OverUnderEngine />
                             </div>
                             <div
                                 label={

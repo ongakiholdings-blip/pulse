@@ -1,4 +1,4 @@
-﻿@use 'components/shared/styles/devices' as *;
+@use 'components/shared/styles/devices' as *;
 
 @property --p-angle {
     syntax: '<angle>';
@@ -201,7 +201,7 @@
 .free-bots {
     background:
         linear-gradient(180deg, rgb(2 12 27 / 10%), rgb(2 9 21 / 28%)),
-        url('../../assets/free-bots-wallpaper.jpeg') center / cover no-repeat;
+        url('../../assets/green-abstract-gradient-background.jpg') center / cover no-repeat;
     padding: 2.4rem;
     height: 100%;
     overflow-y: auto;
@@ -302,6 +302,7 @@
     &__mini-tabs {
         align-items: center;
         display: flex;
+        flex-wrap: wrap;
         gap: 0.8rem;
         margin-bottom: 2.4rem;
         border: 1px solid rgb(255 255 255 / 24%);
@@ -363,6 +364,15 @@
                 color: #a78bfa;
                 border-color: #a78bfa;
                 background: rgb(167 139 250 / 18%);
+            }
+        }
+
+        &--ai-bots {
+            &.free-bots__mini-tab--active {
+                color: #6ee7b7;
+                border-color: #34d399;
+                background: linear-gradient(135deg, rgb(16 185 129 / 22%), rgb(15 118 110 / 24%));
+                box-shadow: 0 0 1rem rgb(52 211 153 / 20%), inset 0 1px rgb(255 255 255 / 20%);
             }
         }
 

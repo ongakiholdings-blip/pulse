@@ -74,7 +74,7 @@ $loss-red:     #ef4444;
     box-sizing: border-box;
     background:
         radial-gradient(ellipse 120% 80% at 50% 0%, rgb(28 20 0 / 88%) 0%, rgb(10 8 1 / 92%) 50%, rgb(4 3 0 / 96%) 100%),
-        url('../../assets/robot-bg-desktop.jpg');
+        url('../../assets/green-abstract-gradient-background.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -82,7 +82,7 @@ $loss-red:     #ef4444;
     @include mobile-or-tablet-screen {
         background-image:
             radial-gradient(ellipse 120% 80% at 50% 0%, rgb(28 20 0 / 90%) 0%, rgb(10 8 1 / 94%) 50%, rgb(4 3 0 / 97%) 100%),
-            url('../../assets/robot-bg-mobile.jpg');
+            url('../../assets/green-abstract-gradient-background.jpg');
         background-attachment: scroll;
     }
 
@@ -1001,7 +1001,7 @@ body.theme--dark {
     .analysis {
         background:
             radial-gradient(ellipse 120% 80% at 50% 0%, rgb(28 20 0 / 88%) 0%, rgb(10 8 1 / 92%) 50%, rgb(4 3 0 / 96%) 100%),
-            url('../../assets/robot-bg-desktop.jpg');
+            url('../../assets/green-abstract-gradient-background.jpg');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -1017,7 +1017,7 @@ body.theme--dark {
 .analysis {
     background:
         linear-gradient(180deg, rgb(4 12 24 / 74%) 0%, rgb(4 10 20 / 84%) 55%, rgb(2 6 14 / 92%) 100%),
-        url('../../assets/robot-bg-desktop.jpg') !important;
+        url('../../assets/green-abstract-gradient-background.jpg') !important;
     background-size: cover !important;
     background-position: center !important;
     color: #eef6ff;
@@ -1025,7 +1025,7 @@ body.theme--dark {
     @include mobile-or-tablet-screen {
         background-image:
             linear-gradient(180deg, rgb(4 12 24 / 78%) 0%, rgb(4 10 20 / 88%) 55%, rgb(2 6 14 / 94%) 100%),
-            url('../../assets/robot-bg-mobile.jpg') !important;
+            url('../../assets/green-abstract-gradient-background.jpg') !important;
     }
 
     &__tool,

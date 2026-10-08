@@ -5,6 +5,7 @@ import { useApiBase } from '@/hooks/useApiBase';
 import { useStore } from '@/hooks/useStore';
 import { contract_stages } from '@/constants/contract-stage';
 import { type MarketScan, scanMarkets as runMarketScan, scoreDigits } from './digit-scanner';
+import { getTradingLimitReason } from './trading-limits';
 import './matches-hub.scss';
 
 const DIGITS = Array.from({ length: 10 }, (_, digit) => digit);
@@ -75,21 +76,28 @@ const MatchesHub = () => {
     const [aiEnabled, setAiEnabled] = useState(true);
     const [candidateCount, setCandidateCount] = useState(1);
     const [stake, setStake] = useState('1');
+    const [stopLoss, setStopLoss] = useState('10');
+    const [takeProfit, setTakeProfit] = useState('10');
+    const [sessionProfit, setSessionProfit] = useState(0);
     const [selectedDigits, setSelectedDigits] = useState<number[]>([]);
     const [currentTick, setCurrentTick] = useState('--');
     const [digitHistory, setDigitHistory] = useState<number[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isTrading, setIsTrading] = useState(false);
+    const [isAutoRunning, setIsAutoRunning] = useState(false);
     const [status, setStatus] = useState('Connecting to live market dataâ€¦');
     const [contracts, setContracts] = useState<MatchContract[]>([]);
     const [isScanning, setIsScanning] = useState(false);
     const [scanResults, setScanResults] = useState<MarketScan[]>([]);
     const subscriptionId = useRef<string | null>(null);
     const contractIds = useRef<Set<number>>(new Set());
+    const settlementWaiters = useRef(new Map<number, (profit: number) => void>());
+    const autoRunActive = useRef(false);
+    const isUnmounted = useRef(false);
     const liveDigits = useRef<number[]>([]);
     const { connectionStatus } = useApiBase();
     const { client, transactions, run_panel, ui } = useStore();
     const symbol = MARKETS[market];
+    const currency = (api_base as any).account_info?.currency || client?.currency || 'USD';
     const historyCount = Math.min(5000, Math.max(10, Number(analysisTicks) || 1000));
 
     useEffect(() => {
@@ -121,7 +129,6 @@ const MatchesHub = () => {
                             liveDigits.current = [...liveDigits.current, digit].slice(-historyCount);
                             setDigitHistory(history => [...history, digit].slice(-historyCount));
                             setIsLoading(false);
-                            setStatus('Live market feed connected.');
                         }
                     }
 
@@ -143,6 +150,11 @@ const MatchesHub = () => {
                         )));
                         if (contract.is_sold || contract.is_expired) {
                             contractIds.current.delete(contract.contract_id);
+                            const resolveSettlement = settlementWaiters.current.get(contract.contract_id);
+                            if (resolveSettlement) {
+                                settlementWaiters.current.delete(contract.contract_id);
+                                resolveSettlement(Number(contract.profit ?? 0));
+                            }
                             const contractSubscriptionId = data?.subscription?.id;
                             if (contractSubscriptionId) {
                                 void api.send({ forget: contractSubscriptionId }).catch((error: unknown) => {
@@ -190,7 +202,7 @@ const MatchesHub = () => {
                     setCurrentTick(formatQuote(prices[prices.length - 1], pipSize));
                 }
                 setIsLoading(false);
-                setStatus('Live market feed connected.');
+                if (!autoRunActive.current) setStatus('Live market feed connected.');
             } catch (error) {
                 console.error('[MatchesHub] Live market subscription failed:', error);
                 messageSubscription?.unsubscribe();
@@ -232,6 +244,21 @@ const MatchesHub = () => {
         };
     }, [connectionStatus, historyCount, symbol, transactions]);
 
+    useEffect(() => {
+        isUnmounted.current = false;
+        return () => {
+            isUnmounted.current = true;
+            if (!autoRunActive.current) return;
+            autoRunActive.current = false;
+            settlementWaiters.current.forEach(resolve => resolve(0));
+            settlementWaiters.current.clear();
+            run_panel.setIsRunning(false);
+            run_panel.setContractStage(contract_stages.NOT_RUNNING);
+            (ui as any)?.setAccountSwitcherDisabledMessage?.();
+            (ui as any)?.setPromptHandler?.(false);
+        };
+    }, [run_panel, ui]);
+
     const counts = useMemo(() => DIGITS.map(digit => digitHistory.filter(value => value === digit).length), [digitHistory]);
     const totalTicks = digitHistory.length;
     const maxCount = Math.max(1, ...counts);
@@ -270,7 +297,7 @@ const MatchesHub = () => {
         }
         if (isScanning) return;
         setIsScanning(true);
-        setStatus(`Scanning ${Object.keys(MARKETS).length} markets…`);
+        setStatus(`Scanning ${Object.keys(MARKETS).length} marketsï¿½`);
         try {
             const results = await runMarketScan({
                 api,
@@ -279,7 +306,7 @@ const MatchesHub = () => {
                 pickCount: candidateCount,
                 tickCount: historyCount,
                 getLastDigit,
-                onProgress: (done, total) => setStatus(`Scanning markets… ${done}/${total}`),
+                onProgress: (done, total) => setStatus(`Scanning marketsï¿½ ${done}/${total}`),
             });
             setScanResults(results);
             if (!results.length) {
@@ -289,7 +316,7 @@ const MatchesHub = () => {
             const best = results[0];
             setAiEnabled(true);
             setMarket(best.market);
-            setStatus(`Scan complete: ${best.market} — ${contractType} ${best.picks.map(pick => pick.digit).join(', ')} (score ${best.score.toFixed(1)}) across ${results.length} markets.`);
+            setStatus(`Scan complete: ${best.market} ï¿½ ${contractType} ${best.picks.map(pick => pick.digit).join(', ')} (score ${best.score.toFixed(1)}) across ${results.length} markets.`);
         } finally {
             setIsScanning(false);
         }
@@ -316,88 +343,142 @@ const MatchesHub = () => {
             return;
         }
         const duration = Number(durationTicks);
-        if (tradeDigits.length === 0 || !Number.isFinite(amount) || amount < 0.35 || !Number.isInteger(duration) || duration < 1) {
-            setStatus('Choose at least one digit and enter a valid stake and tick duration.');
+        const lossLimit = Number(stopLoss);
+        const profitLimit = Number(takeProfit);
+        if (
+            tradeDigits.length === 0 ||
+            !Number.isFinite(amount) ||
+            amount < 0.35 ||
+            !Number.isInteger(duration) ||
+            duration < 1 ||
+            !Number.isFinite(lossLimit) ||
+            lossLimit <= 0 ||
+            !Number.isFinite(profitLimit) ||
+            profitLimit <= 0
+        ) {
+            setStatus('Choose at least one digit and enter a valid stake, duration, stop loss, and take profit.');
             return;
         }
-        if (run_panel.is_running || isTrading) return;
+        if (run_panel.is_running || autoRunActive.current) return;
 
-        setIsTrading(true);
-        setStatus(`Buying ${tradeDigits.length} ${contractType.toLowerCase()} contract${tradeDigits.length === 1 ? '' : 's'}â€¦`);
+        const runConfig = {
+            amount,
+            duration,
+            digits: [...tradeDigits],
+            contractType,
+            symbol,
+            lossLimit,
+            profitLimit,
+        };
+        autoRunActive.current = true;
+        setIsAutoRunning(true);
+        setSessionProfit(0);
+        setStatus('Starting Matches Hub runâ€¦');
         run_panel.run_id = `run-${Date.now()}`;
         run_panel.setIsRunning(true);
         run_panel.setContractStage(contract_stages.STARTING);
         run_panel.toggleDrawer(true);
-        (ui as any)?.setAccountSwitcherDisabledMessage?.(
-            'Account switching is disabled while Matches Hub contracts are being placed.'
-        );
+        (ui as any)?.setAccountSwitcherDisabledMessage?.('Account switching is disabled while the Matches Hub limit run is active.');
         (ui as any)?.setPromptHandler?.(true);
 
         try {
-            const currency = (api_base as any).account_info?.currency || client?.currency || 'USD';
-            const responses = await Promise.all(tradeDigits.map(digit => api.send({
-                buy: '1',
-                price: amount,
-                parameters: {
-                    amount,
-                    basis: 'stake',
-                    contract_type: contractType === 'Matches' ? 'DIGITMATCH' : 'DIGITDIFF',
-                    currency,
-                    duration,
-                    duration_unit: 't',
-                    underlying_symbol: symbol,
-                    barrier: String(digit),
-                },
-            })));
-
-            const buys = responses.map((response: any) => getSuccessfulApiData(response)?.buy);
-            if (buys.some(buy => !buy)) throw new Error('One or more contracts could not be purchased.');
-
-            const newContracts: MatchContract[] = buys.map((buy: any, index: number) => ({
-                id: buy.contract_id,
-                digit: tradeDigits[index],
-                entry: String(buy.entry_tick ?? 'â€”'),
-                exit: 'â€”',
-                profit: 0,
-                status: 'OPEN',
-            }));
-            newContracts.forEach((item, index) => {
-                const buy = buys[index];
-                contractIds.current.add(item.id);
-                transactions.onBotContractEvent({
-                    ...buy,
-                    contract_id: item.id,
-                    contract_type: contractType === 'Matches' ? 'DIGITMATCH' : 'DIGITDIFF',
-                    barrier: String(item.digit),
-                    underlying_symbol: symbol,
-                    currency,
-                    buy_price: buy.buy_price ?? amount,
-                    date_start: buy.date_start ?? buy.purchase_time ?? Math.floor(Date.now() / 1000),
-                    status: 'open',
-                    profit: 0,
-                    transaction_ids: {
-                        ...(buy.transaction_ids ?? {}),
-                        buy: buy.transaction_id ?? buy.transaction_ids?.buy ?? item.id,
+            let realizedProfit = 0;
+            while (autoRunActive.current) {
+                setStatus(`Buying ${runConfig.digits.length} ${runConfig.contractType.toLowerCase()} contract${runConfig.digits.length === 1 ? '' : 's'}â€¦`);
+                run_panel.setContractStage(contract_stages.STARTING);
+                const responses = await Promise.all(runConfig.digits.map(digit => api.send({
+                    buy: '1',
+                    price: runConfig.amount,
+                    parameters: {
+                        amount: runConfig.amount,
+                        basis: 'stake',
+                        contract_type: runConfig.contractType === 'Matches' ? 'DIGITMATCH' : 'DIGITDIFF',
+                        currency,
+                        duration: runConfig.duration,
+                        duration_unit: 't',
+                        underlying_symbol: runConfig.symbol,
+                        barrier: String(digit),
                     },
-                } as any);
-            });
-            setContracts(current => [...newContracts, ...current]);
-            await Promise.all(newContracts.map(item => api.send({
-                proposal_open_contract: 1,
-                contract_id: item.id,
-                subscribe: 1,
-            })));
-            setStatus(`${newContracts.length} contract${newContracts.length === 1 ? '' : 's'} open. Live contract updates are active.`);
+                })));
+
+                const buys = responses.map((response: any) => getSuccessfulApiData(response)?.buy);
+                if (buys.some(buy => !buy)) throw new Error('One or more contracts could not be purchased.');
+
+                const newContracts: MatchContract[] = buys.map((buy: any, index: number) => ({
+                    id: buy.contract_id,
+                    digit: runConfig.digits[index],
+                    entry: String(buy.entry_tick ?? 'â€”'),
+                    exit: 'â€”',
+                    profit: 0,
+                    status: 'OPEN',
+                }));
+                newContracts.forEach((item, index) => {
+                    const buy = buys[index];
+                    contractIds.current.add(item.id);
+                    transactions.onBotContractEvent({
+                        ...buy,
+                        contract_id: item.id,
+                        contract_type: runConfig.contractType === 'Matches' ? 'DIGITMATCH' : 'DIGITDIFF',
+                        barrier: String(item.digit),
+                        underlying_symbol: runConfig.symbol,
+                        currency,
+                        buy_price: buy.buy_price ?? runConfig.amount,
+                        date_start: buy.date_start ?? buy.purchase_time ?? Math.floor(Date.now() / 1000),
+                        status: 'open',
+                        profit: 0,
+                        transaction_ids: {
+                            ...(buy.transaction_ids ?? {}),
+                            buy: buy.transaction_id ?? buy.transaction_ids?.buy ?? item.id,
+                        },
+                    } as any);
+                });
+                setContracts(current => [...newContracts, ...current]);
+                const settledContracts = Promise.all(newContracts.map(item => new Promise<number>(resolve => {
+                    settlementWaiters.current.set(item.id, resolve);
+                })));
+                await Promise.all(newContracts.map(item => api.send({
+                    proposal_open_contract: 1,
+                    contract_id: item.id,
+                    subscribe: 1,
+                })));
+                if (isUnmounted.current) {
+                    settlementWaiters.current.forEach(resolve => resolve(0));
+                    settlementWaiters.current.clear();
+                }
+                run_panel.setContractStage(contract_stages.RUNNING);
+                setStatus(`Waiting for ${newContracts.length} contract${newContracts.length === 1 ? '' : 's'} to settleâ€¦`);
+                const settledProfits = await settledContracts;
+                realizedProfit += settledProfits.reduce((total, profit) => total + profit, 0);
+                setSessionProfit(realizedProfit);
+
+                const limitReason = getTradingLimitReason(realizedProfit, runConfig.lossLimit, runConfig.profitLimit);
+                if (limitReason) {
+                    autoRunActive.current = false;
+                    setStatus(
+                        `${limitReason === 'take-profit' ? 'Take profit' : 'Stop loss'} reached at ${realizedProfit.toFixed(2)} ${currency}. No more contracts will be opened.`
+                    );
+                } else if (!autoRunActive.current) {
+                    setStatus(`Run stopped after open contracts settled. Session P/L: ${realizedProfit.toFixed(2)} ${currency}.`);
+                }
+            }
         } catch (error) {
             console.error('[MatchesHub] Trade failed:', error);
             setStatus(error instanceof Error ? error.message : 'Trade failed. Please check the account and stake.');
         } finally {
+            autoRunActive.current = false;
+            settlementWaiters.current.clear();
+            setIsAutoRunning(false);
             run_panel.setIsRunning(false);
             run_panel.setContractStage(contract_stages.NOT_RUNNING);
             (ui as any)?.setAccountSwitcherDisabledMessage?.();
             (ui as any)?.setPromptHandler?.(false);
-            setIsTrading(false);
         }
+    };
+
+    const requestRunStop = () => {
+        if (!autoRunActive.current) return;
+        autoRunActive.current = false;
+        setStatus('Stop requested. Waiting for open contracts to settle before ending the run.');
     };
 
     return (
@@ -461,8 +542,9 @@ const MatchesHub = () => {
                 <section className='matches-hub__trade-card'>
                     <div className='matches-hub__section-heading'>
                         <h2>Digit trade dock</h2>
-                        <p>Review observed {market} tick history, then confirm any trade manually.</p>
+                        <p>Review {market} tick history, then run your selection until the realized stop-loss or take-profit limit is reached.</p>
                     </div>
+                    <fieldset className='matches-hub__run-config' disabled={isAutoRunning}>
                     <div className='matches-hub__segmented'>
                         <button className={contractType === 'Matches' ? 'is-active' : ''} onClick={() => setContractType('Matches')} type='button'>Matches</button>
                         <button className={contractType === 'Differs' ? 'is-active is-red' : ''} onClick={() => setContractType('Differs')} type='button'>Differs</button>
@@ -503,7 +585,7 @@ const MatchesHub = () => {
                                     onClick={() => void scanMarkets()}
                                     type='button'
                                 >
-                                    {isScanning ? 'Scanning marketsâ€¦' : `Scan markets · top ${candidateCount} digit${candidateCount === 1 ? '' : 's'}`}
+                                    {isScanning ? 'Scanning marketsâ€¦' : `Scan markets ï¿½ top ${candidateCount} digit${candidateCount === 1 ? '' : 's'}`}
                                 </button>
                             </div>
                             {scanResults.length > 0 && (
@@ -531,8 +613,8 @@ const MatchesHub = () => {
                                         >
                                             <span className='matches-hub__candidate-rank'>#{item.rank}</span>
                                             <strong>{item.digit}</strong>
-                                            <span>{item.percent.toFixed(1)}% · {item.recentPercent.toFixed(0)}% recent</span>
-                                            <small>score {item.score.toFixed(1)} · {item.strength} · gap {item.gap}</small>
+                                            <span>{item.percent.toFixed(1)}% ï¿½ {item.recentPercent.toFixed(0)}% recent</span>
+                                            <small>score {item.score.toFixed(1)} ï¿½ {item.strength} ï¿½ gap {item.gap}</small>
                                         </li>
                                     );
                                 })}
@@ -576,17 +658,26 @@ const MatchesHub = () => {
                             </div>
                         </>
                     )}
-                    <div className='matches-hub__inputs'>
-                        <label>Stake (USD)<input min='0.35' step='0.01' type='number' value={stake} onChange={event => setStake(event.target.value)} /></label>
+                    <div className='matches-hub__inputs matches-hub__primary-inputs'>
+                        <label>Stake ({currency})<input min='0.35' step='0.01' type='number' value={stake} onChange={event => setStake(event.target.value)} /></label>
                         <label>Duration (ticks)<input min='1' max='5000' type='number' value={durationTicks} onChange={event => setDurationTicks(event.target.value)} /></label>
                     </div>
+                    <div className='matches-hub__inputs matches-hub__limits'>
+                        <label>Stop loss ({currency})<input aria-label={`Stop loss in ${currency}`} min='0.01' step='0.01' type='number' value={stopLoss} onChange={event => setStopLoss(event.target.value)} /></label>
+                        <label>Take profit ({currency})<input aria-label={`Take profit in ${currency}`} min='0.01' step='0.01' type='number' value={takeProfit} onChange={event => setTakeProfit(event.target.value)} /></label>
+                    </div>
+                    </fieldset>
+                    <p className='matches-hub__limit-note'>Limits use realized session P/L and are checked after each selected-digit batch settles. Stop Run prevents another batch; open contracts settle normally.</p>
+                    <p className='matches-hub__session-profit' aria-live='polite'>Session realized P/L: {sessionProfit.toFixed(2)} {currency}</p>
                     <button
                         className='matches-hub__trade-button'
-                        disabled={tradeDigits.length === 0 || isTrading || isLoading || connectionStatus !== CONNECTION_STATUS.OPENED}
-                        onClick={() => void tradeSelectedDigit()}
+                        disabled={isAutoRunning
+                            ? !autoRunActive.current
+                            : tradeDigits.length === 0 || isLoading || connectionStatus !== CONNECTION_STATUS.OPENED}
+                        onClick={() => isAutoRunning ? requestRunStop() : void tradeSelectedDigit()}
                         type='button'
                     >
-                        {isTrading ? 'PLACING TRADEâ€¦' : activeLabel}
+                        {isAutoRunning ? autoRunActive.current ? 'STOP RUN' : 'STOPPINGâ€¦' : activeLabel}
                     </button>
                     <p className='matches-hub__status' role='status'>{status}</p>
                 </section>
