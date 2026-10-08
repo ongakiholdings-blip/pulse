@@ -2452,6 +2452,10 @@
         // the end of the controls remain comfortably reachable while scrolling.
         padding-bottom: 10rem;
 
+        // Keep every section at its natural height; the container scrolls
+        // instead of squashing the summary and controls.
+        > * { flex-shrink: 0; }
+
         // ── header / title ─────────────────────────────────────────────────
         &__header { padding: 0.5rem 0.65rem; }
 

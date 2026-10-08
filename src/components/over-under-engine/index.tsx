@@ -1195,7 +1195,7 @@ const OverUnderEngine: React.FC = observer(() => {
                         : null;
                     if (selectedStrategy) {
                         const strategyEntryDigits = getStrategyEntryDigits(eng.current.strategyId);
-                        if (eng.current.strategyId !== 'over1' && eng.current.strategyId !== 'under8' && isCautionCluster(selectedStrategy, recentDigits)) {
+                        if (eng.current.strategyId !== 'over1' && eng.current.strategyId !== 'over2' && eng.current.strategyId !== 'under7' && eng.current.strategyId !== 'under8' && isCautionCluster(selectedStrategy, recentDigits)) {
                             setLastSkipReason(`Skipped ${selectedStrategy.label}: caution cluster detected (${selectedStrategy.cautionDigits.join(', ')})`);
                             setIsWaitingEntry(true);
                             return;
@@ -1218,15 +1218,15 @@ const OverUnderEngine: React.FC = observer(() => {
                                 eng.current.strategyId === 'over1'
                                     ? `Waiting for 3 consecutive digits in the 0–2 bracket (any random order) — got ${d}`
                                     : eng.current.strategyId === 'over2'
-                                        ? `Waiting for Over 2 entry sequence: 0, 1, or 2 → 3, 4, 5, or 6 — got ${d}`
+                                        ? `Waiting for Over 2 entry: last 2 digits both below 2 (0 or 1) — got ${d}`
                                         : eng.current.strategyId === 'under8'
                                             ? `Waiting for Under 8 entry sequence: 3 digits from 7–9, then 3–7 — got ${d}`
                                             : eng.current.strategyId === 'under7'
-                                                ? `Waiting for Under 7 entry sequence: 7, 8, or 9 → 3, 6, 7, 8, or 9 — got ${d}`
+                                                ? `Waiting for Under 7 entry: last 2 digits both above 7 (8 or 9) — got ${d}`
                                                 : eng.current.strategyId === 'even'
-                                                    ? `Waiting for Even entry sequence: odd, odd, odd, skip, even — got ${d}`
+                                                    ? `Waiting for Even entry: last 5 digits all odd — got ${d}`
                                                     : eng.current.strategyId === 'odd'
-                                                        ? `Waiting for Odd entry sequence: even, even, even, skip, odd — got ${d}`
+                                                        ? `Waiting for Odd entry: last 5 digits all even — got ${d}`
                                                         : `Waiting for ${selectedStrategy.label} entry trigger — got ${d}`
                             );
                         }
@@ -1331,7 +1331,7 @@ const OverUnderEngine: React.FC = observer(() => {
                     const selectedStrategy = activeStrategyId === 'dual' || activeStrategyId === 'confidence' ? null : STRATEGY_DEFINITIONS[activeStrategyId];
                     const recentDigits = nextWindow.slice(-6);
                     const shouldTrigger = selectedStrategy
-                        ? (activeStrategyId === 'over1' || !isCautionCluster(selectedStrategy, recentDigits)) &&
+                        ? (activeStrategyId === 'over1' || activeStrategyId === 'over2' || activeStrategyId === 'under7' || !isCautionCluster(selectedStrategy, recentDigits)) &&
                             (['over1', 'over2', 'under8', 'under7', 'even', 'odd'].includes(activeStrategyId)
                                 ? matchesStrategyEntrySequence(activeStrategyId, recentDigits)
                                 : getStrategyEntryDigits(activeStrategyId).includes(latestHistoryDigit))
@@ -1473,15 +1473,15 @@ const OverUnderEngine: React.FC = observer(() => {
             ? (strategyId === 'over1'
                 ? '👀 Watching for 3 consecutive digits in the 0–2 bracket (any random order)…'
                 : strategyId === 'over2'
-                    ? '👀 Watching for Over 2 sequence: 0, 1, or 2 → 3, 4, 5, or 6…'
+                    ? '👀 Watching for Over 2 entry: last 2 digits both below 2…'
                     : strategyId === 'under8'
                         ? '👀 Watching for Under 8 sequence: 7–9, 7–9, 7–9, then 3–7…'
                         : strategyId === 'under7'
-                            ? '👀 Watching for Under 7 sequence: 7, 8, or 9 → 3, 6, 7, 8, or 9…'
+                            ? '👀 Watching for Under 7 entry: last 2 digits both above 7…'
                                 : strategyId === 'even'
-                                    ? '👀 Watching for Even sequence: odd, odd, odd, skip, even…'
+                                    ? '👀 Watching for Even entry: last 5 digits all odd…'
                                     : strategyId === 'odd'
-                                        ? '👀 Watching for Odd sequence: even, even, even, skip, odd…'
+                                        ? '👀 Watching for Odd entry: last 5 digits all even…'
                                         : `👀 Watching for ${resolvedStrategy.label} trigger ${getStrategyEntryDigits(strategyId).join(', ')}…`)
             : usePowerEngine
                 ? 'Connecting…'
@@ -1674,6 +1674,29 @@ const OverUnderEngine: React.FC = observer(() => {
                             </span>
                             <span className='oue__strategy-card-action'>OPEN</span>
                         </button>
+                        {([
+                            { id: 'over2', badge: '↑', title: 'OVER 2', meta: 'DIGIT 3–9 · 70% WIN', description: 'Trades Over 2 when the last 2 digits are both below 2, with live digit frequency percentages.' },
+                            { id: 'under7', badge: '↓', title: 'UNDER 7', meta: 'DIGIT 0–6 · 70% WIN', description: 'Trades Under 7 when the last 2 digits are both above 7, with live digit frequency percentages.' },
+                            { id: 'even', badge: '2', title: 'EVEN', meta: 'DIGIT 0,2,4,6,8 · 50% WIN', description: 'Trades Even when the last 5 digits are all odd, with live digit frequency percentages.' },
+                            { id: 'odd', badge: '1', title: 'ODD', meta: 'DIGIT 1,3,5,7,9 · 50% WIN', description: 'Trades Odd when the last 5 digits are all even, with live digit frequency percentages.' },
+                        ] as const).map(card => (
+                            <button
+                                key={card.id}
+                                type='button'
+                                role='listitem'
+                                className='oue__strategy-card'
+                                aria-label={`Open ${card.title} workspace`}
+                                onClick={() => selectStrategy(card.id)}
+                            >
+                                <span className='oue__strategy-card-badge'>{card.badge}</span>
+                                <span className='oue__strategy-card-content'>
+                                    <span className='oue__strategy-card-title'>{card.title}</span>
+                                    <span className='oue__strategy-card-meta'>{card.meta}</span>
+                                    <span className='oue__strategy-card-description'>{card.description}</span>
+                                </span>
+                                <span className='oue__strategy-card-action'>OPEN</span>
+                            </button>
+                        ))}
                         <button
                             type='button'
                             role='listitem'
@@ -1899,15 +1922,15 @@ const OverUnderEngine: React.FC = observer(() => {
                                 ? strategyId === 'over1'
                                     ? <>Entry: <strong>3 consecutive digits in 0–2 bracket</strong></>
                                     : strategyId === 'over2'
-                                        ? <>Entry: <strong>0/1/2 → 3–6</strong></>
+                                        ? <>Entry: <strong>last 2 digits &lt; 2</strong></>
                                         : strategyId === 'under8'
                                             ? <>Entry: <strong>7–9, 7–9, 7–9 → 3–7</strong></>
                                             : strategyId === 'under7'
-                                                ? <>Entry: <strong>7/8/9 → 3/6/7/8/9</strong></>
+                                                ? <>Entry: <strong>last 2 digits &gt; 7</strong></>
                                                         : strategyId === 'even'
-                                                            ? <>Entry: <strong>odd, odd, odd, skip, even</strong></>
+                                                            ? <>Entry: <strong>last 5 digits all odd</strong></>
                                                             : strategyId === 'odd'
-                                                                ? <>Entry: <strong>even, even, even, skip, odd</strong></>
+                                                                ? <>Entry: <strong>last 5 digits all even</strong></>
                                                                 : <>Entry: <strong>{getStrategyEntryDigits(strategyId).join(', ')}</strong></>
                                 : <>Entry: <strong>4</strong> or <strong>5</strong></>}
                             {isWaitingEntry && <span className='oue__entry-pulse' />}
@@ -2051,15 +2074,15 @@ const OverUnderEngine: React.FC = observer(() => {
                             ? strategyId === 'over1'
                                 ? <>Watching for <strong>3 consecutive digits in the 0–2 bracket</strong> before the next Over 1 trade…</>
                                 : strategyId === 'over2'
-                                    ? <>Watching for the sequence <strong>0/1/2 → 3, 4, 5, or 6</strong> before the next Over 2 trade…</>
+                                    ? <>Watching for <strong>2 consecutive digits below 2 (0 or 1)</strong> before the next Over 2 trade…</>
                                     : strategyId === 'under8'
                                         ? <>Watching for the sequence <strong>7–9, 7–9, 7–9 → 3–7</strong> before the next Under 8 trade…</>
                                         : strategyId === 'under7'
-                                            ? <>Watching for the sequence <strong>7/8/9 → 3, 6, 7, 8, or 9</strong> before the next Under 7 trade…</>
+                                            ? <>Watching for <strong>2 consecutive digits above 7 (8 or 9)</strong> before the next Under 7 trade…</>
                                                 : strategyId === 'even'
-                                                    ? <>Watching for the sequence <strong>odd, odd, odd, skip, even</strong> before the next Even trade…</>
+                                                    ? <>Watching for <strong>5 consecutive odd digits</strong> before the next Even trade…</>
                                                     : strategyId === 'odd'
-                                                        ? <>Watching for the sequence <strong>even, even, even, skip, odd</strong> before the next Odd trade…</>
+                                                        ? <>Watching for <strong>5 consecutive even digits</strong> before the next Odd trade…</>
                                                         : `Watching for ${activeStrategyDef?.label} trigger digit${getStrategyEntryDigits(strategyId).length > 1 ? 's' : ''} ${getStrategyEntryDigits(strategyId).join(', ')}…`
                             : <>Watching for <strong>4 → 5</strong> or <strong>5 → 4</strong>, then trading on the next digit…</>}
                         {lastEntryDigit !== null && (

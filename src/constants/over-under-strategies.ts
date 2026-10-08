@@ -252,7 +252,7 @@ export function matchesStrategyEntrySequence(id: StrategyId, recentDigits: numbe
             return lastThree.every(d => d >= 0 && d <= 2);
         }
         case 'over2':
-            return [0, 1, 2].includes(prev) && [3, 4, 5, 6].includes(current);
+            return prev < 2 && current < 2;
         case 'under8':
             if (recentDigits.length < 4) return false;
             {
@@ -261,20 +261,14 @@ export function matchesStrategyEntrySequence(id: StrategyId, recentDigits: numbe
                     && [3, 4, 5, 6, 7].includes(lastFour[3]);
             }
         case 'under7':
-            return [7, 8, 9].includes(prev) && [3, 6, 7, 8, 9].includes(current);
+            return prev > 7 && current > 7;
         case 'even': {
             if (recentDigits.length < 5) return false;
-            const lastFive = recentDigits.slice(-5);
-            return lastFive.slice(0, 3).every(d => d % 2 === 1)
-                && lastFive[3] !== undefined
-                && lastFive[4] % 2 === 0;
+            return recentDigits.slice(-5).every(d => d % 2 === 1);
         }
         case 'odd': {
             if (recentDigits.length < 5) return false;
-            const lastFive = recentDigits.slice(-5);
-            return lastFive.slice(0, 3).every(d => d % 2 === 0)
-                && lastFive[3] !== undefined
-                && lastFive[4] % 2 === 1;
+            return recentDigits.slice(-5).every(d => d % 2 === 0);
         }
         default:
             return false;
