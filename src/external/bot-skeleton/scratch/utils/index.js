@@ -7,7 +7,7 @@ import { LogTypes } from '../../constants/messages';
 import { error_message_map } from '../../utils/error-config';
 import { saveWorkspaceToRecent } from '../../utils/local-storage';
 import { observer as globalObserver } from '../../utils/observer';
-import { removeLimitedBlocks } from '../../utils/workspace';
+import { hasEnabledPurchaseBlock, removeLimitedBlocks } from '../../utils/workspace';
 import BlockConversion from '../backward-compatibility';
 import DBotStore from '../dbot-store';
 import { saveAs } from '../shared';
@@ -82,7 +82,7 @@ export const validateErrorOnBlockDelete = () => {
     const blockX = blockRect?.left || 0;
     const blockY = blockRect?.top || 0;
     const mandatory_trade_option_block = getSelectedTradeType();
-    const required_block_types = [mandatory_trade_option_block, 'trade_definition', 'purchase', 'before_purchase'];
+    const required_block_types = [mandatory_trade_option_block, 'trade_definition', 'before_purchase'];
     if (required_block_types?.includes(window.Blockly?.getSelected()?.type)) {
         if (
             blockY >= translate_Y - translate_offset &&
@@ -420,7 +420,7 @@ const getDisabledBlocks = required_blocks_check => {
             .filter(block => required_block_types.includes(block.type))
             .map(block => [block.type, block.disabled])
     );
-    const mandatory_blocks = ['before_purchase', 'purchase', 'trade_definition', 'trade_definition_tradeoptions'];
+    const mandatory_blocks = ['before_purchase', 'trade_definition', 'trade_definition_tradeoptions'];
     const has_disabled_blocks = mandatory_blocks.some(type => disabled_blocks[type]);
 
     return has_disabled_blocks
@@ -459,6 +459,9 @@ export const isAllRequiredBlocksEnabled = workspace => {
     const required_blocks_check = getAllRequiredBlocks(workspace, required_block_types);
 
     const missing_blocks = getMissingBlocks(workspace, required_block_types);
+    if (!hasEnabledPurchaseBlock(workspace)) {
+        missing_blocks.push('purchase');
+    }
     const disabled_blocks = getDisabledBlocks(required_blocks_check);
 
     if (missing_blocks) throwNewErrorMessage(missing_blocks, 'missing');

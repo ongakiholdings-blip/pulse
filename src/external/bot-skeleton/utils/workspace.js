@@ -1,5 +1,21 @@
 import { config } from '../constants/config';
 
+export const hasEnabledPurchaseBlock = workspace => {
+    if (!workspace) return false;
+
+    return workspace.getAllBlocks(false).some(block => {
+        if (!['purchase', 'hedge_purchase'].includes(block.type) || !block.isEnabled()) {
+            return false;
+        }
+
+        let root = block;
+        while (root.getParent()) {
+            root = root.getParent();
+        }
+        return root.type === 'before_purchase';
+    });
+};
+
 export const hasAllRequiredBlocks = () => {
     const blocks_in_workspace = window.Blockly.derivWorkspace.getAllBlocks();
     const { mandatoryMainBlocks } = config();
@@ -9,7 +25,7 @@ export const hasAllRequiredBlocks = () => {
         all_block_types.includes(required_block_type)
     );
 
-    return has_all_required_blocks;
+    return has_all_required_blocks && hasEnabledPurchaseBlock(window.Blockly.derivWorkspace);
 };
 
 export const onWorkspaceResize = () => {

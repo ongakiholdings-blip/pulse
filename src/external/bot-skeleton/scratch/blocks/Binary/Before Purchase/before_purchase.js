@@ -70,7 +70,7 @@ window.Blockly.Blocks.before_purchase = {
         return {
             display_name: localize('Purchase conditions'),
             description: localize(
-                'This block is mandatory. Only one copy of this block is allowed. You can place the Purchase block (see below) here as well as conditional blocks to define your purchase conditions.'
+                'This block is mandatory. Only one copy is allowed. Add a Purchase or Hedge purchase block here, with optional conditions, to define when contracts are bought.'
             ),
         };
     },
