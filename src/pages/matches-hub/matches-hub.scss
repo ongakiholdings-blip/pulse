@@ -167,6 +167,101 @@
         border-color: rgb(110 231 183 / 35%);
         background: rgb(2 24 23 / 74%);
     }
+
+    &__scanner-panel,
+    &__scan-result {
+        margin-top: 0.75rem;
+        border: 1px solid rgb(110 231 183 / 38%);
+        border-radius: 0.35rem;
+        background: linear-gradient(145deg, rgb(4 50 42 / 94%), rgb(2 24 23 / 96%));
+        color: #e6fff5;
+        box-shadow: inset 0 0 1.5rem rgb(0 0 0 / 20%);
+    }
+
+    &__scanner-panel-header,
+    &__scan-result-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.7rem 0.85rem;
+        border-bottom: 1px solid rgb(110 231 183 / 28%);
+        color: #a7f3d0;
+        font-size: 0.9rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+
+        strong { color: #ecfdf5; font-size: 0.9rem; text-align: end; }
+    }
+
+    &__scanner-log {
+        display: grid;
+        gap: 0.25rem;
+        padding: 0.75rem 0.85rem;
+        color: #d1fae5;
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.5;
+
+        p { margin: 0; overflow-wrap: anywhere; }
+        b { color: #6ee7b7; }
+    }
+
+    &__scan-progress {
+        height: 0.7rem;
+        margin: 0 0.75rem 0.8rem;
+        overflow: hidden;
+        border: 1px solid rgb(110 231 183 / 48%);
+        border-radius: 99rem;
+        background: rgb(1 16 15 / 88%);
+
+        span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #34d399, #a7f3d0);
+            box-shadow: 0 0 0.7rem rgb(52 211 153 / 45%);
+            transition: width 0.1s linear;
+        }
+    }
+
+    &__scan-result-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+        padding: 0.85rem;
+
+        div { display: grid; align-content: start; gap: 0.2rem; min-width: 0; }
+        span { color: #a7f3d0; font-size: 0.78rem; font-weight: 800; }
+        strong { color: #f0fdf4; font-size: 0.95rem; font-weight: 900; overflow-wrap: anywhere; }
+    }
+
+    &__scan-result .matches-hub__ranked-candidates {
+        margin: 0 0.85rem;
+    }
+
+    &__scan-result .matches-hub__ai-context {
+        margin: 0.75rem 0.85rem 0.85rem;
+        color: #d1fae5;
+    }
+
+    &__ranked-label {
+        margin: 0.85rem 0 0;
+        color: #a7f3d0;
+        font-size: 0.85rem;
+        font-weight: 900;
+        line-height: 1.45;
+    }
+
+    &__ai-context {
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 650px) {
+        &__scan-result-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
 }
 
 html body .matches-hub__header,
@@ -198,4 +293,83 @@ html body .matches-hub__direction button.is-red,
 html body .matches-hub__segmented button.is-red {
     background: linear-gradient(135deg, #991b1b, #dc2626);
     color: #fff;
+}
+
+html body .matches-hub input,
+html body .matches-hub select,
+html body .matches-hub__direction button,
+html body .matches-hub__segmented button {
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+html body .matches-hub__eyebrow {
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+html body .matches-hub {
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+
+html body .matches-hub__connection,
+html body .matches-hub__toolbar label,
+html body .matches-hub__selection-mode > span,
+html body .matches-hub__ai-controls p,
+html body .matches-hub__ai-context,
+html body .matches-hub__status,
+html body .matches-hub__limit-note,
+html body .matches-hub__session-profit,
+html body .matches-hub__pick-label,
+html body .matches-hub__section-heading p,
+html body .matches-hub__contracts > p,
+html body .matches-hub__legend,
+html body .matches-hub__digit-pills div {
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1.5;
+}
+
+html body .matches-hub__scanner-log,
+html body .matches-hub__scanner-panel-header,
+html body .matches-hub__scan-result-header,
+html body .matches-hub__scan-result-summary span,
+html body .matches-hub__scan-result-summary strong,
+html body .matches-hub__ranked-label {
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1.5;
+}
+
+html body .matches-hub__ranked-candidates li > span,
+html body .matches-hub__ranked-candidates small,
+html body .matches-hub__candidate-rank,
+html body .matches-hub__scan-button,
+html body .matches-hub__reset-button,
+html body .matches-hub__trade-button {
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
+html body .matches-hub__ranked-candidates strong,
+html body .matches-hub__digit-pills strong,
+html body .matches-hub__quote strong {
+    font-weight: 900;
+}
+
+html body .matches-hub__bar > span,
+html body .matches-hub__legend,
+html body .matches-hub__quote,
+html body .matches-hub__scan-result-summary span {
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+html body .matches-hub__ranked-candidates li > span,
+html body .matches-hub__ranked-candidates small {
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1.45;
 }

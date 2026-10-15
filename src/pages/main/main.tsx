@@ -39,7 +39,7 @@ import {
     LabelPairedMagnifyingGlassPlusCaptionRegularIcon,
     LabelPairedCopyCaptionRegularIcon,
 } from '@deriv/quill-icons/LabelPaired';
-import { LegacyGuide1pxIcon, LegacyHomeNewIcon } from '@deriv/quill-icons/Legacy';
+import { LegacyGuide1pxIcon } from '@deriv/quill-icons/Legacy';
 import { Localize, localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 import RunPanel from '../../components/run-panel';
@@ -57,9 +57,6 @@ import './main.scss';
 
 const ChartWrapper = lazy(() => import('../chart/chart-wrapper'));
 const Tutorial = lazy(() => import('../tutorials'));
-const DERIV_AFFILIATE_URL = 'https://t.deriv.link?t=DGSGSFMT3L38';
-const CONTACT_WHATSAPP_URL = 'https://wa.me/+254115335502';
-const CONTACT_TELEGRAM_URL = 'https://t.me/index_navigator';
 
 const AppWrapper = observer(() => {
     const { connectionStatus } = useApiBase();
@@ -93,12 +90,12 @@ const AppWrapper = observer(() => {
     const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
     const init_render = React.useRef(true);
     const hash = [
-        'deriv_homes',
         'dashboard',
         'bot_builder',
         'free_bots',
         'bulk_trader',
         'signal_zone',
+        'pulse_scanner',
         'scanner',
         'matches_hub',
         'chart',
@@ -153,10 +150,11 @@ const AppWrapper = observer(() => {
     let tab_value: number | string = active_tab;
     const GetHashedValue = (tab: number) => {
         tab_value = location.hash?.split('#')[1];
-        if (!tab_value) return is_preview_mode ? BOT_BUILDER : DBOT_TABS.DERIV_HOMES;
+        if (!tab_value) return is_preview_mode ? BOT_BUILDER : DASHBOARD;
         if (tab_value === 'over_under_engine') return DBOT_TABS.FREE_BOTS;
+        if (tab_value === 'deriv_homes') return DASHBOARD;
         const hashed_tab_index = hash.indexOf(String(tab_value));
-        return hashed_tab_index >= 0 ? hashed_tab_index : is_preview_mode ? BOT_BUILDER : DBOT_TABS.DERIV_HOMES;
+        return hashed_tab_index >= 0 ? hashed_tab_index : is_preview_mode ? BOT_BUILDER : DASHBOARD;
     };
     const active_hash_tab = GetHashedValue(active_tab);
 
@@ -396,72 +394,12 @@ const AppWrapper = observer(() => {
                     className={classNames('main__container', {
                         'main__container--active': active_tour && active_tab === DASHBOARD && !isDesktop,
                         'main__container--panel-open':
-                            isDesktop && is_drawer_open && active_tab !== DBOT_TABS.DERIV_HOMES,
+                            isDesktop && is_drawer_open && active_tab !== DASHBOARD,
                     })}
                 >
                     <div className='main__tabs-wrapper'>
                         {!isDesktop && left_tab_shadow && <span className='tabs-shadow tabs-shadow--left' />}{' '}
                         <Tabs active_index={active_tab} className='main__tabs' onTabItemClick={handleTabChange} top is_scrollable>
-                            <div
-                                label={
-                                    <>
-                                        <LegacyHomeNewIcon
-                                            height='24px'
-                                            width='24px'
-                                            fill='var(--text-general)'
-                                            className='icon-general-fill-g-path'
-                                        />
-                                        <Localize i18n_default_text='DERIV COM' />
-                                    </>
-                                }
-                                id='id-deriv-homes'
-                            >
-                                <div className='deriv-homes'>
-                                    <div className='deriv-homes__water water-orb water-orb--one' />
-                                    <div className='deriv-homes__water water-orb water-orb--two' />
-                                    <div className='deriv-homes__ripple' />
-                                    <div className='deriv-homes__content'>
-                                        <span className='deriv-homes__eyebrow'>DBOTPULSE × DERIV</span>
-                                        <h1>Build your next move with Deriv</h1>
-                                        <p className='deriv-homes__intro'>
-                                            Become a Deriv member and earn through affiliate marketing.
-                                        </p>
-                                        <div className='deriv-homes__actions'>
-                                            <a
-                                                className='deriv-homes__primary-action'
-                                                href={DERIV_AFFILIATE_URL}
-                                                target='_blank'
-                                                rel='noreferrer'
-                                            >
-                                                <span>Become an affiliate</span>
-                                                <span aria-hidden='true'>↗</span>
-                                            </a>
-                                            <a
-                                                className='deriv-homes__secondary-action'
-                                                href={CONTACT_WHATSAPP_URL}
-                                                target='_blank'
-                                                rel='noreferrer'
-                                            >
-                                                Connect with me
-                                            </a>
-                                        </div>
-                                        <div className='deriv-homes__trust-row'>
-                                            <span><strong>01</strong> Create your account</span>
-                                            <span><strong>02</strong> Explore the markets</span>
-                                            <span><strong>03</strong> Grow with guidance</span>
-                                        </div>
-                                    </div>
-                                    <aside className='deriv-homes__glass-card'>
-                                        <span className='deriv-homes__card-icon' aria-hidden='true'>D</span>
-                                        <span className='deriv-homes__card-label'>Your Deriv gateway</span>
-                                        <strong>One clear place to begin</strong>
-                                        <p>Get connected to Deriv and stay connected to your trading community.</p>
-                                        <a href={CONTACT_TELEGRAM_URL} target='_blank' rel='noreferrer'>
-                                            Join the community <span aria-hidden='true'>→</span>
-                                        </a>
-                                    </aside>
-                                </div>
-                            </div>
                             <div
                                 label={
                                     <>
@@ -537,6 +475,27 @@ const AppWrapper = observer(() => {
                                     <iframe
                                         src='https://indexnavigator.vercel.app/'
                                         title='MARKET ANALYZER'
+                                        allow='clipboard-read; clipboard-write'
+                                    />
+                                </div>
+                            </div>
+                            <div
+                                label={
+                                    <>
+                                        <LabelPairedMagnifyingGlassPlusCaptionRegularIcon
+                                            height='24px'
+                                            width='24px'
+                                            fill='var(--text-general)'
+                                        />
+                                        <Localize i18n_default_text='PULSE-SCANNER' />
+                                    </>
+                                }
+                                id='id-pulse-scanner'
+                            >
+                                <div className='external-tab-frame'>
+                                    <iframe
+                                        src='https://dbotpulsescanner.vercel.app'
+                                        title='PULSE-SCANNER'
                                         allow='clipboard-read; clipboard-write'
                                     />
                                 </div>
@@ -675,7 +634,7 @@ const AppWrapper = observer(() => {
                 </div>
             </div>
             <DesktopWrapper>
-                {active_tab !== DBOT_TABS.DERIV_HOMES && (
+                {active_tab !== DASHBOARD && (
                     <React.Fragment>
                         <div className='main__run-strategy-fixed'>
                             <RunStrategy />
@@ -689,7 +648,7 @@ const AppWrapper = observer(() => {
                 <TradingViewModal />
             </DesktopWrapper>
             <DCirclesModal />
-            <MobileWrapper>{active_tab !== DBOT_TABS.DERIV_HOMES && !is_open && <RunPanel />}</MobileWrapper>
+            <MobileWrapper>{active_tab !== DASHBOARD && !is_open && <RunPanel />}</MobileWrapper>
             <Dialog
                 cancel_button_text={cancel_button_text || localize('Cancel')}
                 className='dc-dialog__wrapper--fixed'

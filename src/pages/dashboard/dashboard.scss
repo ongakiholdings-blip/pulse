@@ -23,7 +23,6 @@
         text-shadow: 0 0.15rem 0.4rem rgb(0 0 0 / 70%) !important;
     }
 
-
     /* Free Bots wallpaper. Keep a theme-aware veil over the image so the
        existing dashboard content remains legible in both appearances. */
         /* Deriv-Homes glass-water treatment, scoped to Dashboard only. */
@@ -1512,4 +1511,55 @@ body.theme--light .tab__dashboard__table__block .dc-text,
 body.theme--dark .tab__dashboard__table__block .dc-text {
     color: #fff !important;
     text-shadow: 0 0.15rem 0.4rem rgb(0 0 0 / 70%) !important;
+}
+
+/* Keep the dashboard backdrop and action tiles free of decorative waves/cards. */
+body.theme--light .bot-dashboard .tab__dashboard .tab__dashboard__content,
+body.theme--dark .bot-dashboard .tab__dashboard .tab__dashboard__content,
+.bot-dashboard .tab__dashboard .tab__dashboard__content {
+    background: var(--general-section-1, #eef2ff) !important;
+}
+
+body.theme--light .bot-dashboard .tab__dashboard .tab__dashboard__content::before,
+body.theme--light .bot-dashboard .tab__dashboard .tab__dashboard__content::after,
+body.theme--dark .bot-dashboard .tab__dashboard .tab__dashboard__content::before,
+body.theme--dark .bot-dashboard .tab__dashboard .tab__dashboard__content::after,
+.bot-dashboard .tab__dashboard .tab__dashboard__content::before,
+.bot-dashboard .tab__dashboard .tab__dashboard__content::after {
+    animation: none !important;
+    background: none !important;
+    border: 0 !important;
+    content: none !important;
+    display: none !important;
+}
+
+body.theme--light .bot-dashboard .tab__dashboard .tab__dashboard__table__block,
+body.theme--dark .bot-dashboard .tab__dashboard .tab__dashboard__table__block,
+.bot-dashboard .tab__dashboard .tab__dashboard__table__block {
+    animation: none !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+body.theme--light .bot-dashboard .tab__dashboard .tab__dashboard__table__block::before,
+body.theme--light .bot-dashboard .tab__dashboard .tab__dashboard__table__block::after,
+body.theme--dark .bot-dashboard .tab__dashboard .tab__dashboard__table__block::before,
+body.theme--dark .bot-dashboard .tab__dashboard .tab__dashboard__table__block::after,
+.bot-dashboard .tab__dashboard .tab__dashboard__table__block::before,
+.bot-dashboard .tab__dashboard .tab__dashboard__table__block::after {
+    animation: none !important;
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    content: none !important;
+    display: none !important;
+}
+
+body.theme--light .bot-dashboard .tab__dashboard .tab__dashboard__table__block:hover,
+body.theme--dark .bot-dashboard .tab__dashboard .tab__dashboard__table__block:hover,
+.bot-dashboard .tab__dashboard .tab__dashboard__table__block:hover {
+    box-shadow: none !important;
 }

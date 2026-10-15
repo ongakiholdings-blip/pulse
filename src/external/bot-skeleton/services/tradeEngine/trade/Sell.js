@@ -9,6 +9,9 @@ import { DURING_PURCHASE } from './state/constants';
 export default Engine =>
     class Sell extends Engine {
         isSellAtMarketAvailable() {
+            if (Array.isArray(this.bulkContractIds)) {
+                return (this.bulkContractSellableIds || []).length > 0;
+            }
             return this.contractId && !this.isSold && this.isSellAvailable && !this.isExpired;
         }
 
@@ -25,16 +28,20 @@ export default Engine =>
                 return Promise.resolve();
             }
 
+            const contract_ids = Array.isArray(this.bulkContractIds)
+                ? [...(this.bulkContractSellableIds || [])]
+                : [this.contractId];
             let delay_index = 1;
 
             return new Promise(resolve => {
-                const onContractSold = sell_response => {
+                const onContractSold = sell_responses => {
                     delay_index = 1;
 
-                    if (sell_response) {
+                    sell_responses.forEach(sell_response => {
+                        if (!sell_response) return;
                         const { sold_for } = sell_response.sell;
                         log(LogTypes.SELL, { sold_for });
-                    }
+                    });
 
                     contractStatus('purchase.sold');
                     this.waitForAfter();
@@ -43,13 +50,13 @@ export default Engine =>
 
                 const contract_id = this.contractId;
 
-                const sellContractAndGetContractInfo = () => {
+                const sellContractAndGetContractInfo = contract_id => {
                     return doUntilDone(() => api_base.api.send({ sell: contract_id, price: 0 }))
-                        .then(sell_response => {
+                            .then(sell_response =>
                             doUntilDone(() => api_base.api.send({ proposal_open_contract: 1, contract_id })).then(
                                 () => sell_response
-                            );
-                        })
+                                )
+                            )
                         .catch(e => {
                             const error = e.error;
                             if (error.code === 'InvalidOfferings') {
@@ -95,13 +102,25 @@ export default Engine =>
                         });
                 };
 
+                const sellAllContracts = () =>
+                    contract_ids.reduce(
+                        (promise, contract_id) =>
+                            promise.then(sell_responses =>
+                                sellContractAndGetContractInfo(contract_id).then(sell_response => [
+                                    ...sell_responses,
+                                    sell_response,
+                                ])
+                            ),
+                        Promise.resolve([])
+                    );
+
                 const errors_to_ignore = ['NoOpenPosition', 'InvalidSellContractProposal', 'UnrecognisedRequest'];
 
                 // Restart buy/sell on error is enabled, don't recover from sell error.
                 if (!this.options.timeMachineEnabled) {
                     // eslint-disable-next-line no-promise-executor-return
-                    return doUntilDone(sellContractAndGetContractInfo, errors_to_ignore)
-                        .then(sell_response => onContractSold(sell_response))
+                    return doUntilDone(sellAllContracts, errors_to_ignore)
+                        .then(sell_responses => onContractSold(sell_responses))
                         .catch(error => error);
                 }
 
@@ -111,11 +130,11 @@ export default Engine =>
                 };
                 // eslint-disable-next-line no-promise-executor-return
                 return recoverFromError(
-                    sellContractAndGetContractInfo,
+                    sellAllContracts,
                     recoverFn,
                     errors_to_ignore,
                     delay_index++
-                ).then(sell_response => onContractSold(sell_response));
+                ).then(sell_responses => onContractSold(sell_responses));
             });
         }
     };

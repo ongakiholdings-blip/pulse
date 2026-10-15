@@ -160,7 +160,15 @@ export const ToolboxItems = () =>
             </Category>
             <Category id='purchase_conditions' name={localize('Purchase conditions')}>
                 <Block type='before_purchase' />
-                <Block type='purchase' />
+                <Block type='purchase'>
+                    <Field name='ALLOW_BULK_PURCHASE'>FALSE</Field>
+                    <Value name='TRADE_COUNT'>
+                        <Shadow type='math_number'>
+                            <Field name='NUM'>1</Field>
+                        </Shadow>
+                    </Value>
+                </Block>
+                <Block type='hedge_purchase' />
             </Category>
             <Category id='sell_conditions' name={localize('Sell conditions (optional)')}>
                 <Block type='during_purchase' />
@@ -406,6 +414,95 @@ export const ToolboxItems = () =>
                         </Value>
                     </Block>
                     <Block type='ohlc' />
+                </Category>
+
+                <Category name={localize('Analysis Logic 🔥')} id='analysis_logic'>
+                    <Block type='analysis_last_digits_condition'>
+                        <Field name='OPERATOR'>lt</Field>
+                        <Value name='COUNT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>3</Field>
+                            </Shadow>
+                        </Value>
+                        <Value name='DIGIT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>4</Field>
+                            </Shadow>
+                        </Value>
+                    </Block>
+                    <Block type='analysis_digit_frequency'>
+                        <Field name='MODE'>most</Field>
+                        <Value name='COUNT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>1000</Field>
+                            </Shadow>
+                        </Value>
+                    </Block>
+                    <Block type='analysis_digit_frequency_ranking'>
+                        <Field name='MODE'>most</Field>
+                        <Value name='COUNT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>1000</Field>
+                            </Shadow>
+                        </Value>
+                    </Block>
+                    <Block type='analysis_even_odd_percentage'>
+                        <Field name='MODE'>even</Field>
+                        <Value name='COUNT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>1000</Field>
+                            </Shadow>
+                        </Value>
+                    </Block>
+                    <Block type='analysis_over_under_percentage'>
+                        <Field name='MODE'>over</Field>
+                        <Value name='DIGIT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>4</Field>
+                            </Shadow>
+                        </Value>
+                        <Value name='COUNT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>1000</Field>
+                            </Shadow>
+                        </Value>
+                    </Block>
+                    <Block type='analysis_match_differ_percentage'>
+                        <Field name='MODE'>match</Field>
+                        <Value name='DIGIT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>5</Field>
+                            </Shadow>
+                        </Value>
+                        <Value name='COUNT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>1000</Field>
+                            </Shadow>
+                        </Value>
+                    </Block>
+                    <Block type='analysis_last_n_direction'>
+                        <Field name='DIRECTION'>rise</Field>
+                        <Value name='COUNT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>5</Field>
+                            </Shadow>
+                        </Value>
+                    </Block>
+                    <Block type='analysis_rise_fall_percentage'>
+                        <Field name='DIRECTION'>rise</Field>
+                        <Value name='COUNT'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>1000</Field>
+                            </Shadow>
+                        </Value>
+                    </Block>
+                    <Block type='analysis_nth_last_digit'>
+                        <Value name='INDEX'>
+                            <Shadow type='math_number'>
+                                <Field name='NUM'>3</Field>
+                            </Shadow>
+                        </Value>
+                    </Block>
                 </Category>
 
                 <Category name={localize('Contract')} id='contract_details'>

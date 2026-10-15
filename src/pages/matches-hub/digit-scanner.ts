@@ -28,8 +28,9 @@ export type MarketScan = {
     picks: DigitSignal[];
 };
 
-export const MIN_SCAN_SAMPLE = 100;
-const RECENT_WINDOW = 100;
+export const MIN_SCAN_SAMPLE = 50;
+const RECENT_WINDOW = 20;
+const SCAN_TICK_DELAY_MS = 50;
 const BASE_RATE = 0.1;
 
 const zScore = (count: number, total: number) =>
@@ -89,18 +90,69 @@ type ScanOptions = {
     contract: DigitContract;
     pickCount: number;
     tickCount: number;
+    selectedDigits?: number[];
     getLastDigit: (price: number | string, pipSize?: number) => number;
     onProgress?: (done: number, total: number, market: string) => void;
     signal?: AbortSignal;
 };
 
-/** Pulls tick history for every market, scores each market's digits and ranks the markets by their best picks. */
+type SingleMarketScanOptions = Omit<ScanOptions, 'markets' | 'onProgress' | 'signal'> & {
+    market: string;
+    symbol: string;
+    onProgress?: (analyzed: number, total: number, digit: number) => void;
+    analysisDelayMs?: number;
+};
+
+/** Scores one market's tick history, optionally limiting results to the user's selected digits. */
+export const scanMarket = async ({
+    api,
+    market,
+    symbol,
+    contract,
+    pickCount,
+    tickCount,
+    selectedDigits,
+    getLastDigit,
+    onProgress,
+    analysisDelayMs = SCAN_TICK_DELAY_MS,
+}: SingleMarketScanOptions): Promise<MarketScan | null> => {
+    const raw = await api.send({ ticks_history: symbol, count: tickCount, end: 'latest', style: 'ticks' });
+    const response = raw?.data ?? raw;
+    if (response?.error) throw new Error(response.error.message ?? `Unable to load tick history for ${market}.`);
+    const pipSize = response?.pip_size ?? response?.history?.pip_size;
+    const history = ((response?.history?.prices ?? []) as Array<number | string>)
+        .map(price => getLastDigit(price, pipSize))
+        .filter(digit => Number.isInteger(digit) && digit >= 0 && digit <= 9)
+        .slice(-MIN_SCAN_SAMPLE);
+    const analyzedHistory: number[] = [];
+    for (const [index, digit] of history.entries()) {
+        analyzedHistory.push(digit);
+        onProgress?.(index + 1, history.length, digit);
+        if (analysisDelayMs > 0) {
+            await new Promise<void>(resolve => setTimeout(resolve, analysisDelayMs));
+        }
+    }
+    const scan = scoreDigits(analyzedHistory, contract, pickCount);
+    if (!scan.hasEnoughData) return null;
+
+    const picks = selectedDigits?.length
+        ? [...new Set(selectedDigits)]
+            .map(digit => scan.signals.find(signal => signal.digit === digit))
+            .filter((signal): signal is DigitSignal => signal !== undefined)
+        : scan.picks;
+    if (!picks.length) return null;
+    const score = picks.reduce((sum, pick) => sum + pick.score, 0) / picks.length;
+    return { symbol, market, score, sampleSize: scan.sampleSize, picks };
+};
+
+/** Pulls tick history for each provided market and ranks markets by their selected digit signals. */
 export const scanMarkets = async ({
     api,
     markets,
     contract,
     pickCount,
     tickCount,
+    selectedDigits,
     getLastDigit,
     onProgress,
     signal,
@@ -110,17 +162,17 @@ export const scanMarkets = async ({
     const results = await Promise.all(
         entries.map(async ([market, symbol]) => {
             try {
-                const raw = await api.send({ ticks_history: symbol, count: tickCount, end: 'latest', style: 'ticks' });
-                const response = raw?.data ?? raw;
-                if (response?.error) throw new Error(response.error.message);
-                const pipSize = response?.pip_size ?? response?.history?.pip_size;
-                const history = ((response?.history?.prices ?? []) as Array<number | string>).map(price =>
-                    getLastDigit(price, pipSize)
-                );
-                const scan = scoreDigits(history, contract, pickCount);
-                if (!scan.hasEnoughData) return null;
-                const score = scan.picks.reduce((sum, pick) => sum + pick.score, 0) / scan.picks.length;
-                return { symbol, market, score, sampleSize: scan.sampleSize, picks: scan.picks } as MarketScan;
+                return await scanMarket({
+                    api,
+                    market,
+                    symbol,
+                    contract,
+                    pickCount,
+                    tickCount,
+                    selectedDigits,
+                    getLastDigit,
+                    analysisDelayMs: 0,
+                });
             } catch (error) {
                 console.error(`[DigitScanner] ${market} failed:`, error);
                 return null;

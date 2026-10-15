@@ -4,7 +4,7 @@ import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observab
 import { useApiBase } from '@/hooks/useApiBase';
 import { useStore } from '@/hooks/useStore';
 import { contract_stages } from '@/constants/contract-stage';
-import { type MarketScan, scanMarkets as runMarketScan, scoreDigits } from './digit-scanner';
+import { type MarketScan, scanMarket, scoreDigits } from './digit-scanner';
 import './matches-hub.scss';
 
 const DIGITS = Array.from({ length: 10 }, (_, digit) => digit);
@@ -84,7 +84,8 @@ const MatchesHub = () => {
     const [status, setStatus] = useState('Connecting to live market data…');
     const [contracts, setContracts] = useState<MatchContract[]>([]);
     const [isScanning, setIsScanning] = useState(false);
-    const [scanResults, setScanResults] = useState<MarketScan[]>([]);
+    const [scanProgress, setScanProgress] = useState(0);
+    const [scanResult, setScanResult] = useState<MarketScan | null>(null);
     const subscriptionId = useRef<string | null>(null);
     const contractIds = useRef<Set<number>>(new Set());
     const settlementWaiters = useRef(new Map<number, (profit: number) => void>());
@@ -280,45 +281,61 @@ const MatchesHub = () => {
     const liveDigit = currentTick === '--' ? null : getLastDigit(currentTick, api_base.pip_sizes?.[symbol]);
     const aiDigits = digitRanking.picks.map(item => item.digit);
     const tradeDigits = aiEnabled
-        ? aiDigits
+        ? scanResult?.picks.map(pick => pick.digit) ?? aiDigits
         : batch === 'One digit' ? selectedDigits.slice(0, 1) : selectedDigits;
     const activeLabel = tradeDigits.length === 0
         ? aiEnabled && !digitRanking.hasEnoughData ? 'Waiting for sufficient tick history' : 'Select a digit to trade'
         : `${contractType} ${tradeDigits.join(', ')}`;
 
-    const scanMarkets = async () => {
+    const scanSelectedMarket = async () => {
         const api = api_base.api as any;
         if (!api || connectionStatus !== CONNECTION_STATUS.OPENED) {
             setStatus('The shared Deriv WebSocket is disconnected. Reconnect before scanning.');
             return;
         }
         if (isScanning) return;
+        if (!aiEnabled && selectedDigits.length === 0) {
+            setStatus('Select at least one digit before scanning in manual mode.');
+            return;
+        }
         setIsScanning(true);
-        setStatus(`Scanning ${Object.keys(MARKETS).length} markets�`);
+        setScanProgress(0);
+        setScanResult(null);
+        setStatus(`Scanning the latest 50 digits from ${market} (${symbol})…`);
         try {
-            const results = await runMarketScan({
+            const result = await scanMarket({
                 api,
-                markets: MARKETS,
+                market,
+                symbol,
                 contract: contractType,
                 pickCount: candidateCount,
-                tickCount: historyCount,
+                tickCount: 50,
+                selectedDigits: aiEnabled ? undefined : selectedDigits,
                 getLastDigit,
-                onProgress: (done, total) => setStatus(`Scanning markets� ${done}/${total}`),
+                onProgress: analyzed => {
+                    setScanProgress(analyzed);
+                    setStatus(`Analyzing the latest 50 digits from ${market}: ${analyzed}/50`);
+                },
             });
-            setScanResults(results);
-            if (!results.length) {
-                setStatus('Scan finished but no market returned enough tick history.');
+            if (!result) {
+                setStatus(`Could not scan ${market}: at least 50 valid recent digits are required.`);
                 return;
             }
-            const best = results[0];
-            setAiEnabled(true);
-            setMarket(best.market);
-            setStatus(`Scan complete: ${best.market} � ${contractType} ${best.picks.map(pick => pick.digit).join(', ')} (score ${best.score.toFixed(1)}) across ${results.length} markets.`);
+            setScanResult(result);
+            const digits = result.picks.map(pick => pick.digit);
+            setSelectedDigits(digits);
+            setBatch(digits.length > 1 ? 'Up to 5 digits (batch)' : 'One digit');
+            setStatus(`Scan complete: analyzed ${result.sampleSize} recent digits from ${market}. AI selected ${contractType.toLowerCase()} digit${digits.length === 1 ? '' : 's'} ${digits.join(', ')}.`);
+        } catch (error) {
+            console.error('[MatchesHub] Selected-market scan failed:', error);
+            const reason = error instanceof Error ? error.message : 'Unknown market data error.';
+            setStatus(`Scan failed for ${market}: ${reason}`);
         } finally {
             setIsScanning(false);
         }
     };
     const selectDigit = (digit: number) => {
+        setScanResult(null);
         if (batch === 'One digit') {
             setSelectedDigits([digit]);
             return;
@@ -492,12 +509,29 @@ const MatchesHub = () => {
 
                 <div className='matches-hub__toolbar'>
                     <label>Market
-                        <select value={market} onChange={event => setMarket(event.target.value)}>
+                        <select
+                            disabled={isScanning}
+                            value={market}
+                            onChange={event => {
+                                setMarket(event.target.value);
+                                setScanResult(null);
+                            }}
+                        >
                             {Object.keys(MARKETS).map(name => <option key={name}>{name}</option>)}
                         </select>
                     </label>
                     <label>Analysis ticks
-                        <input min='10' max='5000' type='number' value={analysisTicks} onChange={event => setAnalysisTicks(event.target.value)} />
+                        <input
+                            disabled={isScanning}
+                            min='10'
+                            max='5000'
+                            type='number'
+                            value={analysisTicks}
+                            onChange={event => {
+                                setAnalysisTicks(event.target.value);
+                                setScanResult(null);
+                            }}
+                        />
                     </label>
                     <div className='matches-hub__quote'><span>LIVE QUOTE</span><strong>{currentTick}</strong></div>
                 </div>
@@ -526,8 +560,14 @@ const MatchesHub = () => {
                 </div>
 
                 <div className='matches-hub__direction'>
-                    <button className={contractType === 'Matches' ? 'is-active' : ''} onClick={() => setContractType('Matches')} type='button'>Match selected digit</button>
-                    <button className={contractType === 'Differs' ? 'is-active is-red' : 'is-red'} onClick={() => setContractType('Differs')} type='button'>Differ from selected digit</button>
+                    <button disabled={isScanning} className={contractType === 'Matches' ? 'is-active' : ''} onClick={() => {
+                        setContractType('Matches');
+                        setScanResult(null);
+                    }} type='button'>Match selected digit</button>
+                    <button disabled={isScanning} className={contractType === 'Differs' ? 'is-active is-red' : 'is-red'} onClick={() => {
+                        setContractType('Differs');
+                        setScanResult(null);
+                    }} type='button'>Differ from selected digit</button>
                 </div>
 
                 <section className='matches-hub__trade-card'>
@@ -535,21 +575,31 @@ const MatchesHub = () => {
                         <h2>Digit trade dock</h2>
                         <p>Review {market} tick history, then run your selection to place one trade.</p>
                     </div>
-                    <fieldset className='matches-hub__run-config' disabled={isAutoRunning}>
+                    <fieldset className='matches-hub__run-config' disabled={isAutoRunning || isScanning}>
                     <div className='matches-hub__segmented'>
-                        <button className={contractType === 'Matches' ? 'is-active' : ''} onClick={() => setContractType('Matches')} type='button'>Matches</button>
-                        <button className={contractType === 'Differs' ? 'is-active is-red' : ''} onClick={() => setContractType('Differs')} type='button'>Differs</button>
+                        <button className={contractType === 'Matches' ? 'is-active' : ''} onClick={() => {
+                            setContractType('Matches');
+                            setScanResult(null);
+                        }} type='button'>Matches</button>
+                        <button className={contractType === 'Differs' ? 'is-active is-red' : ''} onClick={() => {
+                            setContractType('Differs');
+                            setScanResult(null);
+                        }} type='button'>Differs</button>
                     </div>
                     <div className='matches-hub__selection-mode'>
                         <span id='matches-hub-selection-mode'>Digit selection</span>
                         <div className='matches-hub__segmented' role='group' aria-labelledby='matches-hub-selection-mode'>
-                            <button aria-pressed={aiEnabled} className={aiEnabled ? 'is-active' : ''} onClick={() => setAiEnabled(true)} type='button'>AI digit ranking</button>
+                            <button aria-pressed={aiEnabled} className={aiEnabled ? 'is-active' : ''} onClick={() => {
+                                setAiEnabled(true);
+                                setScanResult(null);
+                            }} type='button'>AI digit ranking</button>
                             <button
                                 aria-pressed={!aiEnabled}
                                 className={!aiEnabled ? 'is-active' : ''}
                                 onClick={() => {
                                     if (aiEnabled && !selectedDigits.length) setSelectedDigits(aiDigits);
                                     setAiEnabled(false);
+                                    setScanResult(null);
                                 }}
                                 type='button'
                             >
@@ -557,45 +607,93 @@ const MatchesHub = () => {
                             </button>
                         </div>
                     </div>
+                    <div className='matches-hub__scanner-panel'>
+                        <div className='matches-hub__scanner-panel-header'>
+                            <span>MARKET SCANNER</span>
+                            <strong>{isScanning ? 'SCANNING' : scanResult ? 'RESULT READY' : 'STANDBY'}</strong>
+                        </div>
+                        <div className='matches-hub__scanner-log' role='log' aria-live='polite'>
+                            <p><b>[CONNECTION]</b> {connectionStatus === CONNECTION_STATUS.OPENED ? 'Deriv WebSocket connected' : 'Waiting for Deriv WebSocket'}</p>
+                            <p><b>[MARKET]</b> {market} ({symbol})</p>
+                            <p><b>[CONTRACT]</b> {contractType} · {durationTicks} tick{durationTicks === '1' ? '' : 's'}</p>
+                            <p><b>[TARGET DIGITS]</b> {aiEnabled ? `Top ${candidateCount} ranked digits` : selectedDigits.length ? selectedDigits.join(', ') : 'Select digits before scanning'}</p>
+                            {(isScanning || scanResult) && (
+                                <>
+                                    <p><b>[SCAN]</b> {isScanning ? `Analyzing the latest 50 digits · ${scanProgress}/50 complete` : `Analyzed ${scanResult?.sampleSize ?? 0} recent digits`}</p>
+                                    <div
+                                        className='matches-hub__scan-progress'
+                                        role='progressbar'
+                                        aria-label='Recent digit analysis progress'
+                                        aria-valuemin={0}
+                                        aria-valuemax={50}
+                                        aria-valuenow={scanProgress}
+                                    >
+                                        <span style={{ width: `${(scanProgress / 50) * 100}%` }} />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    <div className='matches-hub__ai-controls'>
+                        {aiEnabled && (
+                            <label htmlFor='matches-hub-candidate-count'>Rank top
+                                <select
+                                    id='matches-hub-candidate-count'
+                                    value={candidateCount}
+                                    onChange={event => {
+                                        setCandidateCount(Number(event.target.value));
+                                        setScanResult(null);
+                                    }}
+                                >
+                                    {[1, 2, 3, 4, 5].map(count => <option key={count} value={count}>{count} {count === 1 ? 'digit' : 'digits'}</option>)}
+                                </select>
+                            </label>
+                        )}
+                        <p>{digitRanking.sampleSize} live ticks observed · recency-weighted frequency</p>
+                        <button
+                            className='matches-hub__scan-button'
+                            disabled={isScanning || connectionStatus !== CONNECTION_STATUS.OPENED}
+                            onClick={() => void scanSelectedMarket()}
+                            type='button'
+                        >
+                            {isScanning ? `Scanning ${market}…` : aiEnabled
+                                ? `Scan selected market · top ${candidateCount} digit${candidateCount === 1 ? '' : 's'}`
+                                : `Scan ${market} · selected digit${selectedDigits.length === 1 ? '' : 's'}`}
+                        </button>
+                    </div>
+                    {scanResult && (
+                        <section className='matches-hub__scan-result' aria-label='Selected market scan result'>
+                            <div className='matches-hub__scan-result-header'>
+                                <span>SCAN RESULTS</span>
+                                <strong>{scanResult.market} · {scanResult.sampleSize} ticks</strong>
+                            </div>
+                            <div className='matches-hub__scan-result-summary'>
+                                <div><span>MARKET</span><strong>{scanResult.market}</strong></div>
+                                <div><span>CONTRACT</span><strong>{contractType}</strong></div>
+                                <div><span>SELECTED DIGITS</span><strong>{scanResult.picks.map(pick => pick.digit).join(', ')}</strong></div>
+                                <div><span>AVERAGE SCORE</span><strong>{scanResult.score.toFixed(2)}</strong></div>
+                            </div>
+                            <ol className='matches-hub__ranked-candidates' aria-label='Scanned selected digits'>
+                                {scanResult.picks.map((item, index) => (
+                                    <li className='is-selected' key={item.digit}>
+                                        <span className='matches-hub__candidate-rank'>#{index + 1} SELECTED</span>
+                                        <strong>{item.digit}</strong>
+                                        <span>{item.percent.toFixed(1)}% overall · {item.recentPercent.toFixed(0)}% recent</span>
+                                        <small>score {item.score.toFixed(1)} · {item.strength} · gap {item.gap}</small>
+                                    </li>
+                                ))}
+                            </ol>
+                            <p className='matches-hub__ai-context'>The results are selected in AI digit ranking and ready to trade. Review them, then use the trade button when ready.</p>
+                        </section>
+                    )}
                     {aiEnabled ? (
                         <div className='matches-hub__ai-panel'>
-                            <div className='matches-hub__ai-controls'>
-                                <label htmlFor='matches-hub-candidate-count'>Rank top
-                                    <select
-                                        id='matches-hub-candidate-count'
-                                        value={candidateCount}
-                                        onChange={event => setCandidateCount(Number(event.target.value))}
-                                    >
-                                        {[1, 2, 3, 4, 5].map(count => <option key={count} value={count}>{count} {count === 1 ? 'digit' : 'digits'}</option>)}
-                                    </select>
-                                </label>
-                                <p>{digitRanking.sampleSize} observed ticks · recency-weighted frequency</p>
-                                <button
-                                    className='matches-hub__scan-button'
-                                    disabled={isScanning || connectionStatus !== CONNECTION_STATUS.OPENED}
-                                    onClick={() => void scanMarkets()}
-                                    type='button'
-                                >
-                                    {isScanning ? 'Scanning markets…' : `Scan markets � top ${candidateCount} digit${candidateCount === 1 ? '' : 's'}`}
-                                </button>
-                            </div>
-                            {scanResults.length > 0 && (
-                                <ol className='matches-hub__scan-results' aria-label='Market scan results'>
-                                    {scanResults.slice(0, 5).map((result, index) => (
-                                        <li className={result.market === market ? 'is-selected' : ''} key={result.market}>
-                                            <button onClick={() => setMarket(result.market)} type='button'>
-                                                <span className='matches-hub__candidate-rank'>#{index + 1}</span>
-                                                <strong>{result.market}</strong>
-                                                <span>{contractType} {result.picks.map(pick => pick.digit).join(', ')}</span>
-                                                <small>score {result.score.toFixed(1)}</small>
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ol>
-                            )}
+                            <p className='matches-hub__ranked-label'>LIVE DIGIT RANKING · based on the selected market's incoming tick history</p>
                             <ol className='matches-hub__ranked-candidates' aria-label={`Top ${candidateCount} observed digit candidates`}>
                                 {digitRanking.signals.slice(0, 5).map(item => {
-                                    const isSelected = digitRanking.hasEnoughData && item.rank <= candidateCount;
+                                    const isSelected = scanResult
+                                        ? scanResult.picks.some(pick => pick.digit === item.digit)
+                                        : digitRanking.hasEnoughData && item.rank <= candidateCount;
                                     return (
                                         <li
                                             aria-label={`Rank ${item.rank}, digit ${item.digit}, score ${item.score.toFixed(1)}, ${item.strength} signal${isSelected ? ', selected for trade' : ''}`}
@@ -604,8 +702,8 @@ const MatchesHub = () => {
                                         >
                                             <span className='matches-hub__candidate-rank'>#{item.rank}</span>
                                             <strong>{item.digit}</strong>
-                                            <span>{item.percent.toFixed(1)}% � {item.recentPercent.toFixed(0)}% recent</span>
-                                            <small>score {item.score.toFixed(1)} � {item.strength} � gap {item.gap}</small>
+                                            <span>{item.percent.toFixed(1)}% · {item.recentPercent.toFixed(0)}% recent</span>
+                                            <small>score {item.score.toFixed(1)} · {item.strength} · gap {item.gap}</small>
                                         </li>
                                     );
                                 })}
@@ -626,8 +724,12 @@ const MatchesHub = () => {
                                 <button aria-pressed={batch === 'One digit'} className={batch === 'One digit' ? 'is-active' : ''} onClick={() => {
                                     setBatch('One digit');
                                     setSelectedDigits(current => current.slice(0, 1));
+                                    setScanResult(null);
                                 }} type='button'>One digit</button>
-                                <button aria-pressed={batch === 'Up to 5 digits (batch)'} className={batch === 'Up to 5 digits (batch)' ? 'is-active' : ''} onClick={() => setBatch('Up to 5 digits (batch)')} type='button'>Select up to 5 digits</button>
+                                <button aria-pressed={batch === 'Up to 5 digits (batch)'} className={batch === 'Up to 5 digits (batch)' ? 'is-active' : ''} onClick={() => {
+                                    setBatch('Up to 5 digits (batch)');
+                                    setScanResult(null);
+                                }} type='button'>Select up to 5 digits</button>
                             </div>
                             <p className='matches-hub__pick-label'>
                                 {batch === 'One digit'

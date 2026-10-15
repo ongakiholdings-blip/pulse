@@ -358,3 +358,236 @@
         color: #fff !important;
     }
 }
+
+.tutorials-page {
+    display: block;
+    min-height: 0;
+
+    &__sidebar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
+        align-items: center;
+        gap: 0.5rem 1.5rem;
+        width: auto;
+        padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 0;
+        border: 0;
+        background: transparent !important;
+        box-shadow: none;
+    }
+
+    &__heading {
+        min-width: 0;
+
+        h1 {
+            margin: 0.25rem 0;
+            color: #f8fafc;
+            font-size: clamp(1.3rem, 2vw, 1.8rem);
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        p {
+            margin: 0;
+            color: #cbd5e1 !important;
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+    }
+
+    &__eyebrow {
+        color: #67e8f9;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+    }
+
+    &__search {
+        width: 100%;
+        box-sizing: border-box;
+        border-color: rgb(224 242 254 / 45%);
+        background: rgb(255 255 255 / 94%) !important;
+    }
+
+    &__nav {
+        display: flex;
+        grid-column: 1 / -1;
+        gap: 0.5rem;
+        padding-top: 0.7rem;
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    &__nav-item {
+        flex: 0 0 auto;
+        width: auto;
+        min-height: 2.4rem;
+        padding: 0.55rem 1rem;
+        border: 1px solid rgb(224 242 254 / 28%);
+        border-radius: 999px;
+        background: rgb(15 23 42 / 44%);
+        color: #e2e8f0;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+
+        &--active {
+            border-color: #67e8f9;
+            background: #0e7490;
+            color: #fff;
+            box-shadow: 0 0 1rem rgb(6 182 212 / 22%);
+        }
+    }
+
+    &__content {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 1rem clamp(1rem, 3vw, 2.5rem) 2rem;
+    }
+}
+
+.affiliate-hub {
+    width: 100%;
+    max-width: 74rem;
+    margin: 0 auto;
+
+    &__intro {
+        max-width: 48rem;
+
+        h2 {
+            margin: 0.35rem 0 0.5rem;
+            color: #f8fafc;
+            font-size: clamp(1.35rem, 2.3vw, 2rem);
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        p {
+            margin: 0;
+            color: #cbd5e1 !important;
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+    }
+
+    &__eyebrow {
+        color: #67e8f9;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+    }
+
+    &__cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.8rem;
+        margin-top: 1.2rem;
+    }
+
+    &__card {
+        min-width: 0;
+        padding: 1rem;
+        border: 1px solid rgb(226 232 240 / 18%);
+        border-radius: 0.8rem;
+        background: rgb(15 23 42 / 56%);
+        box-shadow: inset 0 1px rgb(255 255 255 / 6%);
+
+        h3 {
+            margin: 0.45rem 0;
+            color: #f8fafc;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        p {
+            margin: 0;
+            color: #cbd5e1 !important;
+            font-size: 0.84rem;
+            line-height: 1.55;
+        }
+
+        &--note {
+            border-color: rgb(103 232 249 / 38%);
+            background: rgb(8 47 73 / 66%);
+        }
+    }
+
+    &__card-number {
+        color: #67e8f9;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.65rem 1rem;
+        margin-top: 1rem;
+
+        a {
+            display: inline-flex;
+            min-height: 2.65rem;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.55rem 1rem;
+            border: 1px solid #22d3ee;
+            border-radius: 0.55rem;
+            background: #0e7490;
+            color: #fff !important;
+            font-size: 0.84rem;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .affiliate-hub__contact {
+            border-color: rgb(226 232 240 / 32%);
+            background: rgb(15 23 42 / 50%);
+        }
+
+        .affiliate-hub__community {
+            border-color: transparent;
+            background: transparent;
+            color: #a5f3fc !important;
+        }
+    }
+}
+
+@media (max-width: 640px) {
+    .tutorials-page {
+        &__sidebar {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0.75rem;
+            padding: 1rem 0.75rem 0;
+        }
+
+        &__search {
+            grid-row: 2;
+        }
+
+        &__nav {
+            grid-row: 3;
+            margin: 0 -0.75rem;
+            padding: 0.2rem 0.75rem 0.5rem;
+        }
+
+        &__content {
+            padding: 0.75rem 0.75rem 1.5rem;
+        }
+    }
+
+    .affiliate-hub__cards {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .affiliate-hub__actions {
+        align-items: stretch;
+        flex-direction: column;
+
+        a {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    }
+}

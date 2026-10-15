@@ -20,9 +20,9 @@ const LoadBotIcon = () => (
     </svg>
 );
 
-type MiniTab = 'POPULAR' | 'NORMAL' | 'PREMIUM' | 'CLASSICS' | 'AI BOTS' | 'BOT STORE';
+type MiniTab = 'POPULAR' | 'NORMAL' | 'PREMIUM' | 'CLASSICS' | 'AI BOTS' | 'NEW BOTS';
 
-const MINI_TABS: MiniTab[] = ['POPULAR', 'NORMAL', 'PREMIUM', 'CLASSICS', 'AI BOTS', 'BOT STORE'];
+const MINI_TABS: MiniTab[] = ['POPULAR', 'NORMAL', 'PREMIUM', 'CLASSICS', 'AI BOTS', 'NEW BOTS'];
 
 const TAB_LABELS: Record<MiniTab, string> = {
     POPULAR: 'POPULAR',
@@ -30,7 +30,7 @@ const TAB_LABELS: Record<MiniTab, string> = {
     PREMIUM: 'PREMIUM',
     CLASSICS: 'CLASSICS',
     'AI BOTS': 'AI BOTS',
-    'BOT STORE': 'BOT STORE',
+    'NEW BOTS': 'NEW BOTS',
 };
 
 const TAB_CONFIG: Record<MiniTab, { badge: string; cardBorder: string }> = {
@@ -54,7 +54,7 @@ const TAB_CONFIG: Record<MiniTab, { badge: string; cardBorder: string }> = {
         badge: '🤖',
         cardBorder: 'linear-gradient(135deg, #34d399 0%, #0f766e 50%, #34d399 100%)',
     },
-    'BOT STORE': {
+    'NEW BOTS': {
         badge: '🛒',
         cardBorder: 'linear-gradient(135deg, #38bdf8 0%, #6366f1 50%, #a78bfa 100%)',
     },
@@ -71,7 +71,7 @@ type BotEntry = {
 
 // ─── Add bots here ────────────────────────────────────────────────────────────
 // Each entry needs: id (unique), xml_file (filename in src/xml/ without .xml),
-// name, description, tab ('NORMAL' | 'PREMIUM' | 'CLASSICS'), difficulty ('Beginner' | 'Intermediate' | 'Advanced')
+// name, description, tab, difficulty ('Beginner' | 'Intermediate' | 'Advanced')
 const FREE_BOTS: BotEntry[] = [
     {
         id: 'under_8_pro_v1',
@@ -250,6 +250,14 @@ const FREE_BOTS: BotEntry[] = [
         tab: 'CLASSICS',
         difficulty: 'Advanced',
     },
+    {
+        id: 'digit_scanner',
+        xml_file: 'digit_scanner',
+        name: 'Digit Scanner',
+        description: 'Digit Matches strategy for the 1HZ100V Volatility Index with configurable stake, martingale, take-profit, and stop-loss settings.',
+        tab: 'NEW BOTS',
+        difficulty: 'Intermediate',
+    },
 ];
 
 const POPULAR_BOT_IDS = new Set([
@@ -317,7 +325,7 @@ const FreeBots = observer(() => {
     const visible_bots =
         activeTab === 'POPULAR'
             ? FREE_BOTS.filter(bot => POPULAR_BOT_IDS.has(bot.id))
-            : activeTab === 'BOT STORE' || activeTab === 'AI BOTS'
+            : activeTab === 'AI BOTS'
                 ? []
             : FREE_BOTS.filter(bot => bot.tab === activeTab);
 
@@ -327,7 +335,7 @@ const FreeBots = observer(() => {
                 {MINI_TABS.map(tab => (
                     <button
                         key={tab}
-                        className={`free-bots__mini-tab free-bots__mini-tab--${tab.toLowerCase()}${activeTab === tab ? ' free-bots__mini-tab--active' : ''}`}
+                        className={`free-bots__mini-tab free-bots__mini-tab--${tab.toLowerCase().replace(/\s+/g, '-')}${activeTab === tab ? ' free-bots__mini-tab--active' : ''}`}
                         onClick={() => setActiveTab(tab)}
                         aria-pressed={activeTab === tab}
                     >

@@ -18,13 +18,20 @@ export default Engine =>
                     this.setContractFlags(contract);
 
                     this.data.contract = contract;
+                    if (Array.isArray(this.bulkContractIds)) {
+                        this.bulkContractSellableIds = this.bulkContractSellableIds.filter(
+                            id => id !== contract.contract_id
+                        );
+                        if (!contract.is_sold && contract.is_valid_to_sell) {
+                            this.bulkContractSellableIds.push(contract.contract_id);
+                        }
+                    }
 
                     broadcastContract({ accountID: api_base.account_info.loginid, ...contract });
 
                     const is_sold = Boolean(contract.is_sold);
 
                     if (is_sold) {
-                        this.contractId = '';
                         clearTimeout(this.transaction_recovery_timeout);
                         this.updateTotals(contract);
                         contractStatus({
@@ -33,10 +40,25 @@ export default Engine =>
                             contract,
                         });
 
-                        if (this.afterPromise) {
-                            this.afterPromise();
+                        if (Array.isArray(this.bulkContractIds)) {
+                            this.bulkContractIds = this.bulkContractIds.filter(id => id !== contract.contract_id);
+                            this.bulkContractSellableIds = this.bulkContractSellableIds.filter(
+                                id => id !== contract.contract_id
+                            );
+                            if (this.bulkContractIds.length > 0) {
+                                this.contractId = this.bulkContractIds[this.bulkContractIds.length - 1];
+                                return;
+                            }
+                            if (this.bulkPurchasePending > 0) {
+                                this.contractId = '';
+                                return;
+                            }
+                            this.finishBulkPurchasesIfReady();
+                            return;
                         }
 
+                        this.contractId = '';
+                        if (this.afterPromise) this.afterPromise();
                         this.store.dispatch(sell());
                     } else {
                         this.store.dispatch(openContractReceived());
@@ -61,7 +83,26 @@ export default Engine =>
         }
 
         expectedContractId(contractId) {
-            return this.contractId && contractId === this.contractId;
+            return (
+                (this.contractId && contractId === this.contractId) ||
+                (Array.isArray(this.bulkContractIds) && this.bulkContractIds.includes(contractId))
+            );
+        }
+
+        finishBulkPurchasesIfReady() {
+            if (
+                !Array.isArray(this.bulkContractIds) ||
+                this.bulkContractIds.length > 0 ||
+                this.bulkPurchasePending > 0
+            ) {
+                return;
+            }
+
+            this.bulkContractIds = undefined;
+            this.bulkContractSellableIds = undefined;
+            this.contractId = '';
+            if (this.afterPromise) this.afterPromise();
+            this.store.dispatch(sell());
         }
 
         getSellPrice() {

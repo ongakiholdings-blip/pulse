@@ -2,12 +2,23 @@
 import debounce from 'lodash.debounce';
 import { getLocalizedErrorMessage } from '@/constants/backend-error-messages';
 import { localize } from '@deriv-com/translations';
+import { createError } from '../../../utils/error';
 import { getLast } from '../../../utils/binary-utils';
 import { observer as globalObserver } from '../../../utils/observer';
 import { api_base } from '../../api/api-base';
 import { getDirection, getLastDigit } from '../utils/helpers';
 import { expectPositiveInteger } from '../utils/sanitize';
 import * as constants from './state/constants';
+import {
+    allTicksMoveInDirection,
+    compareDigit,
+    getDigitFrequency,
+    getDigitFrequencyRanking,
+    getDigitPercentage,
+    getDirectionPercentage,
+} from './analysis-utils';
+
+const MAX_ANALYSIS_WINDOW = 1000;
 
 let tickListenerKey;
 
@@ -95,6 +106,74 @@ export default Engine =>
                 return getLastDigit(tick.toFixed(this.getPipSize()));
             });
             return digits;
+        }
+
+        async getAnalysisData(count) {
+            const windowSize = expectPositiveInteger(
+                Number(count),
+                localize('The analysis window must be a positive whole number.')
+            );
+            if (windowSize > MAX_ANALYSIS_WINDOW) {
+                throw createError(
+                    'AnalysisWindowExceeded',
+                    localize('The analysis window cannot exceed {{ max }} ticks.', { max: MAX_ANALYSIS_WINDOW })
+                );
+            }
+
+            const ticks = await this.getTicks();
+            const recentTicks = ticks.slice(-windowSize);
+            if (recentTicks.length === 0) {
+                throw createError('TickHistoryUnavailable', localize('No tick history is available for analysis.'));
+            }
+            return {
+                ticks: recentTicks,
+                digits: this.getLastDigitsFromList(recentTicks),
+            };
+        }
+
+        validateAnalysisDigit(digit) {
+            const value = Number(digit);
+            if (!Number.isInteger(value) || value < 0 || value > 9) {
+                throw createError('DigitExpected', localize('The analysis digit must be a whole number from 0 to 9.'));
+            }
+            return value;
+        }
+
+        async getNthLastDigit(index) {
+            const { digits } = await this.getAnalysisData(index);
+            return digits[0];
+        }
+
+        async analyzeLastDigitsCondition(count, operator, target) {
+            const digit = this.validateAnalysisDigit(target);
+            const { digits } = await this.getAnalysisData(count);
+            return digits.every(value => compareDigit(value, operator, digit));
+        }
+
+        async analyzeDigitFrequency(mode, count) {
+            const { digits } = await this.getAnalysisData(count);
+            return getDigitFrequency(digits, mode);
+        }
+
+        async analyzeDigitFrequencyRanking(mode, count) {
+            const { digits } = await this.getAnalysisData(count);
+            return getDigitFrequencyRanking(digits, mode);
+        }
+
+        async analyzeDigitPercentage(mode, count, target) {
+            const { digits } = await this.getAnalysisData(count);
+            const digit = target === undefined ? undefined : this.validateAnalysisDigit(target);
+            return getDigitPercentage(digits, mode, digit);
+        }
+
+        async analyzeLastTicksDirection(count, direction) {
+            const { ticks } = await this.getAnalysisData(count);
+            return allTicksMoveInDirection(ticks, direction);
+        }
+
+        async analyzeDirectionPercentage(direction, count) {
+            const { ticks } = await this.getAnalysisData(count);
+            return getDirectionPercentage(ticks, direction);
         }
 
         checkDirection(dir) {

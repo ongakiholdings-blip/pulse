@@ -16,6 +16,7 @@ window.Blockly.Categories = {
     Indicators: 'indicators',
     Time: 'time',
     Tick_Analysis: 'technical_analysis',
+    Analysis_Logic: 'analysis_logic',
     Candle: 'candle',
     Miscellaneous: 'miscellaneous',
     Loop: 'loops',
