@@ -70,6 +70,8 @@ window.Blockly.Blocks.hedge_purchase = {
             contract_type_block.getFieldValue('TYPE_LIST'),
             trade_type_block.getFieldValue('TRADETYPE_LIST')
         );
+        if (options.length === 0) return;
+
         const firstField = this.getField('PURCHASE1_LIST');
         const secondField = this.getField('PURCHASE2_LIST');
         const updateOptions = (field, defaultValue) =>
@@ -79,8 +81,10 @@ window.Blockly.Blocks.hedge_purchase = {
                 should_pretend_empty: true,
             });
 
-        updateOptions(firstField, firstField.getValue());
-        const firstValue = firstField.getValue();
+        const firstValue = options.some(option => option[1] === firstField.getValue())
+            ? firstField.getValue()
+            : options[0][1];
+        updateOptions(firstField, firstValue);
         const secondValue = secondField.getValue();
         const alternateOption = options.find(option => option[1] !== firstValue);
         const secondDefault = options.some(option => option[1] === secondValue)
