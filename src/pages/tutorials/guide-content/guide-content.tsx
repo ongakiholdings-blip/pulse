@@ -8,6 +8,7 @@ import { removeKeyValue } from '@/utils/settings';
 import { LegacyPlay1pxIcon } from '@deriv/quill-icons/Legacy';
 import { Localize, localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
+import { SOCIAL_URLS } from '@/constants/social-links';
 /* [AI] - Analytics event tracking removed - see migrate-docs/MONITORING_PACKAGES.md for re-implementation guide */
 /* [/AI] */
 
@@ -28,7 +29,7 @@ type TGuideContent = {
 };
 
 const GuideContent = ({ guide_tab_content, video_tab_content, is_dialog_open }: TGuideContent) => {
-    const youtube_channel_url = 'https://www.youtube.com/@index_navigatorke';
+    const youtube_channel_url = SOCIAL_URLS.youtube;
     const { isDesktop } = useDevice();
     const { dashboard } = useStore();
     const {

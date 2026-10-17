@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LogoMark } from '@/components/layout/app-logo/LogoMark';
+import { SOCIAL_URLS } from '@/constants/social-links';
 import './devtools-guard.scss';
 
 const DETECTION_INTERVAL = 800;
@@ -18,11 +19,11 @@ const SocialIcon = ({ name }: { name: string }) => {
 };
 
 const SOCIAL_LINKS = [
-    { label: 'YouTube', href: 'https://www.youtube.com/@index_navigatorke' },
-    { label: 'TikTok', href: 'https://www.tiktok.com/@indexnavigator' },
+    { label: 'YouTube', href: SOCIAL_URLS.youtube },
+    { label: 'TikTok', href: SOCIAL_URLS.tiktok },
     { label: 'WhatsApp', href: 'https://wa.me/+254115335502' },
-    { label: 'Telegram', href: 'https://t.me/index_navigator' },
-    { label: 'Instagram', href: 'https://www.instagram.com/index_navigator?igsi=eDE0Yzg3Z2swZHEz' },
+    { label: 'Telegram', href: SOCIAL_URLS.telegram },
+    { label: 'Instagram', href: SOCIAL_URLS.instagram },
 ];
 
 function detectDevToolsOpen(initialViewport?: { width: number; height: number; outerWidth: number; outerHeight: number }) {

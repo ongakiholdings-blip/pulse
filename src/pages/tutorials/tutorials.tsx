@@ -9,10 +9,11 @@ import QuickStrategyGuides from './quick-strategy-content/quick-strategy-guides'
 import FAQContent from './faq-content';
 import GuideContent from './guide-content';
 import { LabelPairedSearchSmRegularIcon } from '@deriv/quill-icons/LabelPaired';
+import { SOCIAL_URLS } from '@/constants/social-links';
 
 const DERIV_AFFILIATE_URL = 'https://t.deriv.link?t=DGSGSFMT3L38';
 const CONTACT_WHATSAPP_URL = 'https://wa.me/+254115335502';
-const CONTACT_TELEGRAM_URL = 'https://t.me/index_navigator';
+const CONTACT_TELEGRAM_URL = SOCIAL_URLS.telegram;
 
 type TTutorialsTab = {
     handleTabChange: (active_number: number) => void;

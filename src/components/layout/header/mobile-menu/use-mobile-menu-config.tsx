@@ -3,14 +3,11 @@ import useThemeSwitcher from '@/hooks/useThemeSwitcher';
 import RootStore from '@/stores/root-store';
 import { LegacyLogout1pxIcon, LegacyTheme1pxIcon } from '@deriv/quill-icons/Legacy';
 import { useTranslations } from '@deriv-com/translations';
+import { SOCIAL_URLS } from '@/constants/social-links';
 
 // ─── Community / Support Links ───────────────────────────────────────────────
 // Update these URLs to point to your WhatsApp group and Telegram channel.
 const WHATSAPP_LINK = 'https://wa.me/+254115335502';
-const TELEGRAM_LINK = 'https://t.me/index_navigator';
-const TIKTOK_LINK = 'https://www.tiktok.com/@indexnavigator';
-const INSTAGRAM_LINK = 'https://www.instagram.com/index_navigator?igsi=eDE0Yzg3Z2swZHEz';
-const YOUTUBE_LINK = 'https://www.youtube.com/@index_navigatorke';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const WhatsAppIcon = () => (
@@ -87,28 +84,28 @@ const useMobileMenuConfig = (
                     as: 'a',
                     label: 'Telegram',
                     LeftComponent: TelegramIcon,
-                    href: TELEGRAM_LINK,
+                    href: SOCIAL_URLS.telegram,
                     target: '_blank',
                 },
                 {
                     as: 'a',
                     label: 'TikTok',
                     LeftComponent: TikTokIcon,
-                    href: TIKTOK_LINK,
+                    href: SOCIAL_URLS.tiktok,
                     target: '_blank',
                 },
                 {
                     as: 'a',
                     label: 'Instagram',
                     LeftComponent: InstagramIcon,
-                    href: INSTAGRAM_LINK,
+                    href: SOCIAL_URLS.instagram,
                     target: '_blank',
                 },
                 {
                     as: 'a',
                     label: 'YouTube',
                     LeftComponent: YouTubeIcon,
-                    href: YOUTUBE_LINK,
+                    href: SOCIAL_URLS.youtube,
                     target: '_blank',
                 },
             ] as TMenuConfig,
