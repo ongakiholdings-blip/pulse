@@ -39,8 +39,9 @@ export default Engine =>
                 return Promise.resolve();
             }
 
+            const bulkTradeOptions = this.tradeOptions ? { ...this.tradeOptions } : this.tradeOptions;
             const balance = this.getBalance();
-            const totalTradeAmount = this.tradeOptions?.amount * contractTypes.length;
+            const totalTradeAmount = bulkTradeOptions?.amount * contractTypes.length;
             if (shouldStopTradingForBalance(balance, totalTradeAmount)) {
                 const insufficientBalanceMessage = getLocalizedErrorMessage('InsufficientBalance');
                 this.observer.emit('ui.log.error', insufficientBalanceMessage);
@@ -62,7 +63,7 @@ export default Engine =>
                         await this.waitForProposal(contract_type);
                     }
 
-                    const response = await this.buyContract(contract_type);
+                    const response = await this.buyContract(contract_type, bulkTradeOptions);
                     this.registerBulkPurchase(response, contract_type, index === 0);
                     purchasedCount += 1;
                 }
@@ -116,7 +117,7 @@ export default Engine =>
             });
         }
 
-        async buyContract(contract_type) {
+        async buyContract(contract_type, tradeOptions = this.tradeOptions) {
             if (this.is_proposal_subscription_required) {
                 const { id, askPrice } = this.selectProposal(contract_type);
                 contractStatus({
@@ -128,9 +129,9 @@ export default Engine =>
 
             contractStatus({
                 id: 'contract.purchase_sent',
-                data: this.tradeOptions.amount,
+                data: tradeOptions.amount,
             });
-            return doUntilDone(() => api_base.api.send(tradeOptionToBuy(contract_type, this.tradeOptions)));
+            return doUntilDone(() => api_base.api.send(tradeOptionToBuy(contract_type, tradeOptions)));
         }
 
         registerBulkPurchase(response, contract_type, isFirstPurchase) {

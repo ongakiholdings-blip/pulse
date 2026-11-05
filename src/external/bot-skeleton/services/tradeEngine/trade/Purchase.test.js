@@ -76,6 +76,34 @@ describe('bulk purchase engine', () => {
         expect(engine.store.dispatch).toHaveBeenCalledTimes(1);
     });
 
+    it('uses the same trade options for every contract in a bulk purchase', async () => {
+        const engine = createEngine();
+        const sentTradeOptions = [];
+        api_base.api.send.mockImplementation(async request => {
+            if (request.buy === '1') {
+                sentTradeOptions.push(request.parameters);
+                engine.tradeOptions = {
+                    ...engine.tradeOptions,
+                    barrier: '9',
+                };
+            }
+            const contractId = 100 + sentTradeOptions.length - 1;
+            return {
+                buy: {
+                    contract_id: contractId,
+                    transaction_id: contractId + 1000,
+                    buy_price: 1,
+                },
+            };
+        });
+
+        await engine.purchaseMany(['CALL'], 3);
+
+        expect(sentTradeOptions).toHaveLength(3);
+        expect(sentTradeOptions[0]).toEqual(sentTradeOptions[1]);
+        expect(sentTradeOptions[1]).toEqual(sentTradeOptions[2]);
+    });
+
     it('rejects invalid bulk counts before submitting a purchase', async () => {
         const engine = createEngine();
 
