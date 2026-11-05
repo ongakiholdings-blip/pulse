@@ -442,7 +442,7 @@ const BulkTrader = () => {
                 </label>
                 <label className='bulk-trader__field'>
                     <span>No. of bulk trades</span>
-                    <input min='1' type='number' value={bulkTrades} onChange={event => setBulkTrades(event.target.value)} />
+                    <input min='1' max='150' type='number' value={bulkTrades} onChange={event => setBulkTrades(event.target.value)} />
                 </label>
             </div>
 
@@ -461,7 +461,7 @@ const BulkTrader = () => {
                     <div className='bulk-trader__auto-widget-grid'>
                         <label className='bulk-trader__field'><span>Duration (ticks)</span><input min='1' type='number' value={tradeTicks} onChange={event => setTradeTicks(event.target.value)} /></label>
                         <label className='bulk-trader__field'><span>Stake</span><input min='0' step='0.01' type='number' value={stake} onChange={event => setStake(event.target.value)} /></label>
-                        <label className='bulk-trader__field'><span>Bulk purchase</span><input min='1' type='number' value={bulkTrades} onChange={event => setBulkTrades(event.target.value)} /></label>
+                        <label className='bulk-trader__field'><span>Bulk purchase</span><input min='1' max='150' type='number' value={bulkTrades} onChange={event => setBulkTrades(event.target.value)} /></label>
                         <label className='bulk-trader__field'><span>Stop loss</span><input min='0.01' step='0.01' type='number' value={autoStopLoss} onChange={event => setAutoStopLoss(event.target.value)} /></label>
                         <label className='bulk-trader__field'><span>Take profit</span><input min='0.01' step='0.01' type='number' value={autoTakeProfit} onChange={event => setAutoTakeProfit(event.target.value)} /></label>
                     </div>

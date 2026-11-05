@@ -52,7 +52,7 @@ window.Blockly.Blocks.purchase = {
             colourSecondary: window.Blockly.Colours.Special1.colourSecondary,
             colourTertiary: window.Blockly.Colours.Special1.colourTertiary,
             tooltip: localize(
-                'This block purchases the selected contract. Enable bulk purchase to buy up to 10 contracts from the same signal.'
+                'This block purchases the selected contract. Enable bulk purchase to buy up to 150 contracts from the same signal.'
             ),
             category: window.Blockly.Categories.Before_Purchase,
             inputsInline: false,

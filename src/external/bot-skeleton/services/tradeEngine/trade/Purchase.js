@@ -9,7 +9,7 @@ import { BEFORE_PURCHASE } from './state/constants';
 
 let delayIndex = 0;
 let purchase_reference;
-const MAX_BULK_PURCHASES = 10;
+const MAX_BULK_PURCHASES = 150;
 
 export default Engine =>
     class Purchase extends Engine {
@@ -55,17 +55,30 @@ export default Engine =>
             this.contractId = '';
             let purchasedCount = 0;
             try {
-                for (const [index, contract_type] of contractTypes.entries()) {
-                    if (this.is_proposal_subscription_required) {
+                if (this.is_proposal_subscription_required) {
+                    for (const [index, contract_type] of contractTypes.entries()) {
                         if (index > 0) {
                             this.renewProposalsOnPurchase();
                         }
                         await this.waitForProposal(contract_type);
-                    }
 
-                    const response = await this.buyContract(contract_type, bulkTradeOptions);
-                    this.registerBulkPurchase(response, contract_type, index === 0);
-                    purchasedCount += 1;
+                        const response = await this.buyContract(contract_type, bulkTradeOptions);
+                        this.registerBulkPurchase(response, contract_type, purchasedCount === 0);
+                        purchasedCount += 1;
+                    }
+                } else {
+                    const results = await Promise.allSettled(
+                        contractTypes.map(contract_type => this.buyContract(contract_type, bulkTradeOptions))
+                    );
+                    const failedResult = results.find(result => result.status === 'rejected');
+
+                    results.forEach((result, index) => {
+                        if (result.status === 'fulfilled') {
+                            this.registerBulkPurchase(result.value, contractTypes[index], purchasedCount === 0);
+                            purchasedCount += 1;
+                        }
+                    });
+                    if (failedResult) throw failedResult.reason;
                 }
             } catch (error) {
                 this.bulkPurchasePending = 0;

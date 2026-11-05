@@ -76,6 +76,31 @@ describe('bulk purchase engine', () => {
         expect(engine.store.dispatch).toHaveBeenCalledTimes(1);
     });
 
+    it('submits direct bulk purchases concurrently', async () => {
+        const engine = createEngine();
+        let activePurchases = 0;
+        let maxActivePurchases = 0;
+        api_base.api.send.mockImplementation(async request => {
+            if (request.buy === '1') {
+                activePurchases += 1;
+                maxActivePurchases = Math.max(maxActivePurchases, activePurchases);
+                await new Promise(resolve => setTimeout(resolve, 5));
+                activePurchases -= 1;
+            }
+            return {
+                buy: {
+                    contract_id: 100 + maxActivePurchases,
+                    transaction_id: 1100 + maxActivePurchases,
+                    buy_price: 1,
+                },
+            };
+        });
+
+        await engine.purchaseMany(['CALL'], 5);
+
+        expect(maxActivePurchases).toBe(5);
+    });
+
     it('uses the same trade options for every contract in a bulk purchase', async () => {
         const engine = createEngine();
         const sentTradeOptions = [];
@@ -107,8 +132,8 @@ describe('bulk purchase engine', () => {
     it('rejects invalid bulk counts before submitting a purchase', async () => {
         const engine = createEngine();
 
-        await expect(engine.purchaseMany(['CALL'], 11)).rejects.toThrow(
-            'The number of bulk purchases must be between 1 and 10.'
+        await expect(engine.purchaseMany(['CALL'], 151)).rejects.toThrow(
+            'The number of bulk purchases must be between 1 and 150.'
         );
         expect(api_base.api.send).not.toHaveBeenCalled();
     });
