@@ -27,7 +27,11 @@ export default Engine =>
                         }
                     }
 
-                    broadcastContract({ accountID: api_base.account_info.loginid, ...contract });
+                    broadcastContract({
+                        accountID: api_base.account_info.loginid,
+                        ...contract,
+                        is_bulk: Array.isArray(this.bulkContractIds),
+                    });
 
                     const is_sold = Boolean(contract.is_sold);
 
